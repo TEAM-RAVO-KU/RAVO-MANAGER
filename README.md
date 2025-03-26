@@ -1,4 +1,5 @@
 # RAVO-MANAGER
+<img width="618" alt="image" src="https://github.com/user-attachments/assets/1cfaef7b-3a59-4bbf-920d-170baf75c5dc" /> <br/>
 Manager for RAVO project that fetch data and check integrity, also health checks DB Server
 
 ```sql
