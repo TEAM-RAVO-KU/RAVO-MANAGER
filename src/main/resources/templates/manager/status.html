@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>RAVO DB Manager</title>
+</head>
+<body>
+<h2>RAVO DB Manager Status</h2>
+
+<h3>🔹 Live DB Data</h3>
+<p>ID: <span th:text="${liveData.id}"></span></p>
+<p>Data: <span th:text="${liveData.data}"></span></p>
+<p>Checked At: <span th:text="${liveData.checked_at}"></span></p>
+<p>Integrity: <span th:text="${liveIntegrity}? '✅' : '❌'"></span></p>
+
+<h3>🔸 Standby DB Data</h3>
+<p>ID: <span th:text="${standbyData.id}"></span></p>
+<p>Data: <span th:text="${standbyData.data}"></span></p>
+<p>Checked At: <span th:text="${standbyData.checked_at}"></span></p>
+<p>Integrity: <span th:text="${standbyIntegrity}? '✅' : '❌'"></span></p>
+
+<h3>⚖️ Data Consistency Check</h3>
+<p>
+    Consistency Status:
+    <strong th:text="${consistency}? '✅ Consistent' : '❌ Inconsistent'"></strong>
+</p>
+
+<h3>📌 Health Checks</h3>
+<ul>
+    <li><a href="/actuator/health">Live & Standby DB Health</a></li>
+</ul>
+</body>
+</html>
