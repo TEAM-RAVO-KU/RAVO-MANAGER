@@ -3,31 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <title>RAVO DB Manager</title>
+    <script>
+        // 30초마다 페이지 자동 갱신
+        setTimeout(() => window.location.reload(), 30000);
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #fafafa;
+        }
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            max-width: 800px;
+            margin: 20px auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        p {
+            text-align: center;
+            font-size: 0.9em;
+            color: #777;
+        }
+    </style>
 </head>
 <body>
-<h2>RAVO DB Manager Status</h2>
 
-<h3>🔹 Live DB Data</h3>
-<p>ID: <span th:text="${liveData.id}"></span></p>
-<p>Data: <span th:text="${liveData.data}"></span></p>
-<p>Checked At: <span th:text="${liveData.checked_at}"></span></p>
-<p>Integrity: <span th:text="${liveIntegrity}? '✅' : '❌'"></span></p>
+<h2>📊 RAVO DB Manager Status</h2>
 
-<h3>🔸 Standby DB Data</h3>
-<p>ID: <span th:text="${standbyData.id}"></span></p>
-<p>Data: <span th:text="${standbyData.data}"></span></p>
-<p>Checked At: <span th:text="${standbyData.checked_at}"></span></p>
-<p>Integrity: <span th:text="${standbyIntegrity}? '✅' : '❌'"></span></p>
+<table>
+    <thead>
+    <tr>
+        <th>Status</th>
+        <th>🔹 Live DB Server</th>
+        <th>🔸 Standby DB Server</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><strong>MySQL Server</strong></td>
+        <td th:text="${liveDbStatus} ? '✅ UP' : '❌ DOWN'"></td>
+        <td th:text="${standbyDbStatus} ? '✅ UP' : '❌ DOWN'"></td>
+    </tr>
+    <tr>
+        <td><strong>Data ID</strong></td>
+        <td th:text="${liveData.id}"></td>
+        <td th:text="${standbyData.id}"></td>
+    </tr>
+    <tr>
+        <td><strong>Data Value</strong></td>
+        <td th:text="${liveData.data}"></td>
+        <td th:text="${standbyData.data}"></td>
+    </tr>
+    <tr>
+        <td><strong>Checked At</strong></td>
+        <td th:text="${liveData.checked_at}"></td>
+        <td th:text="${standbyData.checked_at}"></td>
+    </tr>
+    <tr>
+        <td><strong>Integrity Check</strong></td>
+        <td th:text="${liveIntegrity}? '✅ Passed' : '❌ Failed'"></td>
+        <td th:text="${standbyIntegrity}? '✅ Passed' : '❌ Failed'"></td>
+    </tr>
+    <tr>
+        <td><strong>Data Consistency</strong></td>
+        <td colspan="2" th:text="${consistency}? '✅ Consistent' : '❌ Inconsistent'"></td>
+    </tr>
+    </tbody>
+</table>
 
-<h3>⚖️ Data Consistency Check</h3>
-<p>
-    Consistency Status:
-    <strong th:text="${consistency}? '✅ Consistent' : '❌ Inconsistent'"></strong>
-</p>
+<p>⏱ Automatically updates every 30 seconds.</p>
 
-<h3>📌 Health Checks</h3>
-<ul>
-    <li><a href="/actuator/health">Live & Standby DB Health</a></li>
-</ul>
 </body>
 </html>

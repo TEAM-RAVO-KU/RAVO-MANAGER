@@ -20,6 +20,15 @@ public class ManagerService {
         this.standbyJdbcTemplate = standbyJdbcTemplate;
     }
 
+    public boolean isDbAlive(JdbcTemplate jdbcTemplate) {
+        try {
+            jdbcTemplate.execute("SELECT 1");
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public Map<String, Object> fetchLatestData(JdbcTemplate jdbcTemplate) {
         return jdbcTemplate.queryForMap(
                 "SELECT * FROM integrity_data ORDER BY checked_at DESC LIMIT 1");
@@ -43,6 +52,11 @@ public class ManagerService {
         statuses.put("liveIntegrity", checkIntegrity(fetchLatestData(liveJdbcTemplate)));
         statuses.put("standbyIntegrity", checkIntegrity(fetchLatestData(standbyJdbcTemplate)));
         statuses.put("consistency", checkConsistency());
+
+        // MySQL 서버 Health 데이터 추가
+        statuses.put("liveDbStatus", isDbAlive(liveJdbcTemplate));
+        statuses.put("standbyDbStatus", isDbAlive(standbyJdbcTemplate));
+
         return statuses;
     }
 }
