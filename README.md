@@ -7,5 +7,7 @@ CREATE TABLE integrity_data (
     data VARCHAR(255),
     checked_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT INTO integrity_data (data, checked_at) VALUES ('초기 데이터', NOW());
 ```
-Integrity Check 기능을 사용하기 위해서는 최초 1회는 위 `integrity_data`를  Live/Standby DB에 추가해주어야 합니다.
+Integrity Check 기능을 사용하기 위해서는 최초 1회는 위 `integrity_data` TABLE과 데이터를 Live/Standby DB에 추가해주어야 합니다.
