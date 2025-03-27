@@ -78,13 +78,23 @@
         <td th:text="${standbyData.checked_at}"></td>
     </tr>
     <tr>
-        <td><strong>Integrity Check</strong></td>
-        <td th:text="${liveIntegrity}? '✅ Passed' : '❌ Failed'"></td>
-        <td th:text="${standbyIntegrity}? '✅ Passed' : '❌ Failed'"></td>
+        <td><strong>Integrity Check (ID / Data / Date)</strong></td>
+        <td>
+            <span th:text="${liveIntegrity.idValid}? '✅':'❌'"></span> /
+            <span th:text="${liveIntegrity.dataExists}? '✅':'❌'"></span>
+        </td>
+        <td>
+            <span th:text="${standbyIntegrity.dataExists}? '✅':'❌'"></span> /
+            <span th:text="${standbyIntegrity.idValid}? '✅':'❌'"></span>
+        </td>
     </tr>
     <tr>
-        <td><strong>Data Consistency</strong></td>
-        <td colspan="2" th:text="${consistency}? '✅ Consistent' : '❌ Inconsistent'"></td>
+        <td><strong>Consistency Check (ID / Data / CheckedAt)</strong></td>
+        <td colspan="2">
+            <span th:text="${consistency.idConsistent}? '✅':'❌'"></span> /
+            <span th:text="${consistency.dataConsistent}? '✅':'❌'"></span> /
+            <span th:text="${consistency.checkedAtConsistent}? '✅':'❌'"></span>
+        </td>
     </tr>
     </tbody>
 </table>
