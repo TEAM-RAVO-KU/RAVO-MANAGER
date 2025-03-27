@@ -1,7 +1,8 @@
 # RAVO-MANAGER
-<img width="449" alt="image" src="https://github.com/user-attachments/assets/a97a129c-8cf2-43d5-bd1c-7c1d82ca9f1c" />
-<br/> <br/>
-<img width="440" alt="image" src="https://github.com/user-attachments/assets/6b234a4a-d955-4232-909f-aba0b79e8d82" />
+| DB Healthy | LiveDB Down |
+|----------|----------|
+| <img width="440" alt="image" src="https://github.com/user-attachments/assets/a97a129c-8cf2-43d5-bd1c-7c1d82ca9f1c" /> | <img width="440" alt="image" src="https://github.com/user-attachments/assets/6b234a4a-d955-4232-909f-aba0b79e8d82" /> |
+
 
 <br/>
 
