@@ -6,8 +6,6 @@
 
 <br/>
 
-Manager for RAVO project that fetch data and check integrity, also health checks DB Server
-
 ## 선행 요구사항
 ```sql
 CREATE TABLE integrity_data (
