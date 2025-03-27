@@ -1,6 +1,7 @@
 package org.ravo.ravomanager.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.ravo.ravomanager.data.DefaultData;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -17,6 +19,7 @@ import java.util.Objects;
 @Service
 public class ManagerService {
 
+    private final DefaultData defaultData;
     private final JdbcTemplate liveJdbcTemplate;
     private final JdbcTemplate standbyJdbcTemplate;
 
@@ -24,6 +27,7 @@ public class ManagerService {
                           @Qualifier("standbyJdbcTemplate") JdbcTemplate standbyJdbcTemplate) {
         this.liveJdbcTemplate = liveJdbcTemplate;
         this.standbyJdbcTemplate = standbyJdbcTemplate;
+        this.defaultData = new DefaultData();
     }
 
     public boolean isDbAlive(JdbcTemplate jdbcTemplate) {
@@ -31,13 +35,20 @@ public class ManagerService {
             jdbcTemplate.execute("SELECT 1");
             return true;
         } catch (Exception e) {
+            log.warn("[isDbAlive] DB connection failed: {}", e.getMessage());
             return false;
         }
     }
 
     public Map<String, Object> fetchLatestData(JdbcTemplate jdbcTemplate) {
-        return jdbcTemplate.queryForMap(
-                "SELECT * FROM integrity_data ORDER BY checked_at DESC LIMIT 1");
+        try {
+            List<Map<String, Object>> results = jdbcTemplate.queryForList(
+                    "SELECT * FROM integrity_data ORDER BY checked_at DESC LIMIT 1");
+            return results.isEmpty() ? defaultData.defaultFetchData("(No Data)") : results.get(0);
+        } catch (Exception e) {
+            log.warn("[fetchLatestDataSafe] DB Error: {}", e.getMessage());
+            return defaultData.defaultFetchData("(DB Error)");
+        }
     }
 
     private LocalDateTime convertToLocalDateTime(Object obj) {
@@ -71,11 +82,8 @@ public class ManagerService {
     }
 
 
-    public Map<String, Boolean> checkConsistency() {
+    public Map<String, Boolean> checkConsistency(Map<String, Object> liveData, Map<String, Object> standbyData) {
         Map<String, Boolean> consistencyResult = new HashMap<>();
-
-        Map<String, Object> liveData = fetchLatestData(liveJdbcTemplate);
-        Map<String, Object> standbyData = fetchLatestData(standbyJdbcTemplate);
 
         // ID 일치 검사
         boolean idMatch = Objects.equals(liveData.get("id"), standbyData.get("id"));
@@ -97,7 +105,6 @@ public class ManagerService {
             if (liveTime != null && standbyTime != null) {
                 long diffSeconds = Math.abs(Duration.between(liveTime, standbyTime).toSeconds());
                 dateConsistent = diffSeconds <= 60; // 최대 60초 허용
-                log.info("[ManagerService]-[checkConsistency] DiffSeconds: " + diffSeconds);
             } else {
                 log.warn("[ManagerService]-[checkConsistency] Time conversion failed.");
             }
@@ -113,20 +120,27 @@ public class ManagerService {
     public Map<String, Object> getAllStatuses() {
         Map<String, Object> statuses = new HashMap<>();
 
-        Map<String, Object> liveData = fetchLatestData(liveJdbcTemplate);
-        Map<String, Object> standbyData = fetchLatestData(standbyJdbcTemplate);
+        boolean liveDbAlive = isDbAlive(liveJdbcTemplate);
+        boolean standbyDbAlive = isDbAlive(standbyJdbcTemplate);
+
+        statuses.put("liveDbStatus", liveDbAlive);
+        statuses.put("standbyDbStatus", standbyDbAlive);
+
+        Map<String, Object> liveData = liveDbAlive ?
+                fetchLatestData(liveJdbcTemplate) : defaultData.defaultFetchData("N/A");
+        Map<String, Object> standbyData = standbyDbAlive ?
+                fetchLatestData(standbyJdbcTemplate) : defaultData.defaultFetchData("N/A");
 
         statuses.put("liveData", liveData);
         statuses.put("standbyData", standbyData);
 
-        statuses.put("liveIntegrity", checkIntegrity(liveData));
-        statuses.put("standbyIntegrity", checkIntegrity(standbyData));
+        statuses.put("liveIntegrity", liveDbAlive ?
+                checkIntegrity(liveData) : defaultData.defaultIntegrityResult());
+        statuses.put("standbyIntegrity", standbyDbAlive ?
+                checkIntegrity(standbyData) : defaultData.defaultIntegrityResult());
 
-        statuses.put("consistency", checkConsistency());
-
-        // MySQL 서버 Health 데이터 추가
-        statuses.put("liveDbStatus", isDbAlive(liveJdbcTemplate));
-        statuses.put("standbyDbStatus", isDbAlive(standbyJdbcTemplate));
+        statuses.put("consistency", (liveDbAlive && standbyDbAlive) ?
+                checkConsistency(liveData, standbyData) : defaultData.defaultConsistencyResult());
 
         return statuses;
     }
