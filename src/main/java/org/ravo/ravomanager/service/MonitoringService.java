@@ -50,7 +50,10 @@ public class MonitoringService {
                     MetricData standbyData = metricParser.parse(tuple.getT2(), "Standby");
 
                     // 수정 가능한 HashMap을 생성하여 반환
-                    return new HashMap<>(Map.of("active", activeData, "standby", standbyData));
+                    Map<String, MetricData> result = new HashMap<>();
+                    result.put("active", activeData);
+                    result.put("standby", standbyData);
+                    return result;
                 });
     }
 

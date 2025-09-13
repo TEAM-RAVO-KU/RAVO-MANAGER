@@ -35,9 +35,9 @@ public class DashboardController {
             metrics = new HashMap<>();
         }
 
-        // "active"와 "standby" 데이터가 없으면, 템플릿 오류 방지를 위해 비어있는 객체를 생성해 넣어줍니다.
-        metrics.putIfAbsent("active", new MetricData("Active"));
-        metrics.putIfAbsent("standby", new MetricData("Standby"));
+        // "active"와 "standby" 데이터가 없으면, 템플릿 오류 방지를 위해 비어있는 객체를 생성
+        metrics.putIfAbsent("active", new MetricData("Active (Not Found)"));
+        metrics.putIfAbsent("standby", new MetricData("Standby (Not Found)"));
 
         log.info("[DashboardController] Metrics Size : " + metrics.size());
 
