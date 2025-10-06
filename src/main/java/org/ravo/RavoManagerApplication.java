@@ -1,4 +1,4 @@
-package org.ravo.ravomanager;
+package org.ravo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-package org.ravo.ravomanager.config;
+package org.ravo.config;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
