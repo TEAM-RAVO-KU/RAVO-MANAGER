@@ -1,6 +1,6 @@
-package org.ravo.ravomanager.controller;
+package org.ravo.ravomanager.manager.controller;
 
-import org.ravo.ravomanager.service.ManagerService;
+import org.ravo.ravomanager.manager.service.ManagerService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;

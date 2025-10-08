@@ -1,4 +1,4 @@
-package org.ravo.ravomanager.data.dto;
+package org.ravo.ravomanager.manager.data.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
