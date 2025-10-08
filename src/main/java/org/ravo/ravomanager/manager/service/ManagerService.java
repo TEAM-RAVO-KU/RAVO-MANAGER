@@ -1,7 +1,7 @@
-package org.ravo.ravomanager.service;
+package org.ravo.ravomanager.manager.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.ravo.ravomanager.data.DefaultData;
+import org.ravo.ravomanager.manager.data.DefaultData;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
