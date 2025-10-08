@@ -1,9 +1,9 @@
-package org.ravo.client.config;
+package org.ravo.client.bank.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ravo.client.domain.User;
-import org.ravo.client.repository.UserRepository;
+import org.ravo.client.bank.domain.User;
+import org.ravo.client.bank.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 

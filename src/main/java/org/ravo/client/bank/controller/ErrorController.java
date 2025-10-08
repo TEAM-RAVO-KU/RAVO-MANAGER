@@ -1,4 +1,4 @@
-package org.ravo.client.controller;
+package org.ravo.client.bank.controller;
 
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;

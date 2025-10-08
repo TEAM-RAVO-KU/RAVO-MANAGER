@@ -1,4 +1,4 @@
-package org.ravo.dashboard.domain;
+package org.ravo.client.dashboard.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

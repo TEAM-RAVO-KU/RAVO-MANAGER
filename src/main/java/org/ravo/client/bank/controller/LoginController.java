@@ -1,8 +1,8 @@
-package org.ravo.client.controller;
+package org.ravo.client.bank.controller;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.ravo.client.service.UserService;
+import org.ravo.client.bank.service.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;

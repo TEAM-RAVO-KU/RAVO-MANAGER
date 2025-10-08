@@ -1,7 +1,7 @@
-package org.ravo.dashboard.service;
+package org.ravo.client.dashboard.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.ravo.dashboard.domain.SyncStatus;
+import org.ravo.client.dashboard.domain.SyncStatus;
 import org.ravo.ravomanager.manager.data.dto.MetricData;
 import org.ravo.ravomanager.manager.service.MetricParser;
 import org.springframework.beans.factory.annotation.Value;

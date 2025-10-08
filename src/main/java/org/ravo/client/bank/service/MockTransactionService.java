@@ -1,8 +1,8 @@
-package org.ravo.client.service;
+package org.ravo.client.bank.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.ravo.client.domain.User;
-import org.ravo.client.repository.UserRepository;
+import org.ravo.client.bank.domain.User;
+import org.ravo.client.bank.repository.UserRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 

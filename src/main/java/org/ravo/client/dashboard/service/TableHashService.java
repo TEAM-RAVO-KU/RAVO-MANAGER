@@ -1,9 +1,9 @@
-package org.ravo.dashboard.service;
+package org.ravo.client.dashboard.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ravo.dashboard.domain.SyncStatus;
-import org.ravo.dashboard.domain.TableSyncInfo;
+import org.ravo.client.dashboard.domain.SyncStatus;
+import org.ravo.client.dashboard.domain.TableSyncInfo;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;

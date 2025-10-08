@@ -1,10 +1,8 @@
-package org.ravo.dashboard.controller;
+package org.ravo.client.dashboard.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.ravo.client.service.MockTransactionService;
-import org.ravo.dashboard.domain.DatabaseMetrics;
-import org.ravo.dashboard.domain.SyncStatus;
-import org.ravo.dashboard.service.ClientDashboardService;
+import org.ravo.client.dashboard.domain.SyncStatus;
+import org.ravo.client.dashboard.service.ClientDashboardService;
 import org.ravo.ravomanager.manager.data.dto.MetricData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

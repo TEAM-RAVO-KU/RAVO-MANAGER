@@ -1,8 +1,8 @@
-package org.ravo.client.service;
+package org.ravo.client.bank.service;
 
 import lombok.RequiredArgsConstructor;
-import org.ravo.client.domain.User;
-import org.ravo.client.repository.UserRepository;
+import org.ravo.client.bank.domain.User;
+import org.ravo.client.bank.repository.UserRepository;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

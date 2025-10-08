@@ -1,4 +1,4 @@
-package org.ravo.client.controller;
+package org.ravo.client.bank.controller;
 
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.QueryTimeoutException;

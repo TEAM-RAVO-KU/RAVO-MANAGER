@@ -1,4 +1,4 @@
-package org.ravo.client.exception;
+package org.ravo.client.bank.exception;
 
 import jakarta.servlet.http.HttpSession;
 import org.springframework.dao.DataAccessException;

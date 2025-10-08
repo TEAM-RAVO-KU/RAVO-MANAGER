@@ -1,6 +1,6 @@
-package org.ravo.client.repository;
+package org.ravo.client.bank.repository;
 
-import org.ravo.client.domain.User;
+import org.ravo.client.bank.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

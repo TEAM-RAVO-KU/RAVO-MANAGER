@@ -1,4 +1,4 @@
-package org.ravo.client.domain;
+package org.ravo.client.bank.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;

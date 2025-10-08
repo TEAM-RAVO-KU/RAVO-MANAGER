@@ -1,8 +1,8 @@
-package org.ravo.client.controller;
+package org.ravo.client.bank.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ravo.client.service.MockTransactionService;
+import org.ravo.client.bank.service.MockTransactionService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
