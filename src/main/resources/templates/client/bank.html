@@ -9,17 +9,21 @@
     <style>
         body {
             background-color: #f8f9fa;
-            padding: 2rem;
             font-family: 'Segoe UI', sans-serif;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
 
         .account-card {
             background: white;
             border-radius: 16px;
             padding: 2rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            max-width: 420px;
-            margin: auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 350px; /* ✅ 로그인 카드와 동일 폭 */
             text-align: center;
         }
 
@@ -149,10 +153,10 @@
         </form>
     </div>
 
-    <!-- 오류 메시지 (잔액 부족 등) -->
+    <!-- 오류 메시지 -->
     <p class="text-danger mt-3" th:text="${error}"></p>
 
-    <!-- 로그아웃 버튼 -->
+    <!-- 로그아웃 -->
     <form method="get" action="/logout">
         <button type="submit" class="logout-btn">로그아웃</button>
     </form>
