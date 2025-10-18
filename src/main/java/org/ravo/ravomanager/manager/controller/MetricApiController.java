@@ -1,14 +1,13 @@
-package org.ravo.ravomanager.controller;
+package org.ravo.ravomanager.manager.controller;
 
-import org.ravo.ravomanager.data.dto.MetricData;
-import org.ravo.ravomanager.service.MonitoringService;
+import org.ravo.ravomanager.manager.data.dto.MetricData;
+import org.ravo.ravomanager.manager.service.MonitoringService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController

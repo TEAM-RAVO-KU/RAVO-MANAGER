@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Replication Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            color: #1e293b;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #cbd5e1;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .header-subtitle {
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #16a34a;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #16a34a;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .db-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge.active {
+            background: #dcfce7;
+            color: #16a34a;
+            border: 1px solid #86efac;
+        }
+
+        .status-badge.standby {
+            background: #dbeafe;
+            color: #2563eb;
+            border: 1px solid #93c5fd;
+        }
+
+        .status-badge.down {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .db-role {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .metric-item {
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .heartbeat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .sync-section {
+            grid-column: 1 / -1;
+        }
+
+        .sync-rate-display {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .sync-percentage {
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sync-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .sync-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6 0%, #16a34a 100%);
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        .sync-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .binlog-position {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .binlog-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .binlog-value {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #2563eb;
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .event-item {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 3px solid;
+            margin-bottom: 12px;
+        }
+
+        .event-item.update {
+            border-left-color: #f59e0b;
+        }
+
+        .event-item.delete {
+            border-left-color: #ef4444;
+        }
+
+        .event-item.insert {
+            border-left-color: #16a34a;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .event-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .event-badge.update {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .event-badge.delete {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .event-db-label {
+            padding: 4px 10px;
+            background: #dbeafe;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #2563eb;
+        }
+
+        .event-db-label.standby {
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+
+        .event-binlog {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #2563eb;
+            margin-bottom: 8px;
+        }
+
+        .event-query {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #0f172a;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: nowrap;
+            border: 1px solid #e2e8f0;
+        }
+
+        .event-time {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .system-event {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 3px solid;
+            margin-bottom: 12px;
+        }
+
+        .system-event.success {
+            border-left-color: #16a34a;
+        }
+
+        .system-event.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .system-event.info {
+            border-left-color: #3b82f6;
+        }
+
+        .system-event.error {
+            border-left-color: #ef4444;
+        }
+
+        .event-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .system-event.success .event-icon {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .system-event.warning .event-icon {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .system-event.info .event-icon {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .event-content {
+            flex: 1;
+        }
+
+        .event-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .event-description {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .event-timestamp {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .event-type-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .event-type-badge.sync {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .event-type-badge.connection {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .event-type-badge.performance {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .event-type-badge.recovery {
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 20px;
+        }
+
+        .section-header {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .k8s-selector {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+            border: 1px solid #c4b5fd;
+        }
+
+        .k8s-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .k8s-item {
+            background: white;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #c4b5fd;
+        }
+
+        .k8s-label {
+            font-size: 11px;
+            color: #7c3aed;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .k8s-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .target-indicator {
+            display: inline-block;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            border-radius: 6px;
+            font-weight: 600;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div>
+        <h1>RAVO Dashboard</h1>
+        <div class="header-subtitle">Real-time synchronization and failover monitoring</div>
+    </div>
+    <div class="connection-status">
+        <span class="status-dot"></span>
+        <span id="connection-status">Connected</span>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Active DB Card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="db-icon">🗄️</div>
+                <div>
+                    <div>Active DB</div>
+                    <div class="db-role">PRIMARY</div>
+                </div>
+            </div>
+            <div class="status-badge active" id="active-status">
+                Active
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-item">
+                <div class="metric-label">Uptime</div>
+                <div class="metric-value" id="active-uptime">1d 0h 0m</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Connections</div>
+                <div class="metric-value" id="active-connections">245</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">QPS</div>
+                <div class="metric-value" id="active-qps">1,250</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Latency</div>
+                <div class="metric-value" id="active-latency">2.3ms</div>
+            </div>
+        </div>
+
+        <div class="heartbeat">
+            <span>Last Heartbeat</span>
+            <span id="active-heartbeat">오전 1:26:34</span>
+        </div>
+    </div>
+
+    <!-- Standby DB Card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="db-icon">🗄️</div>
+                <div>
+                    <div>Standby DB</div>
+                    <div class="db-role">REPLICA</div>
+                </div>
+            </div>
+            <div class="status-badge standby" id="standby-status">
+                Standby
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-item">
+                <div class="metric-label">Uptime</div>
+                <div class="metric-value" id="standby-uptime">1d 0h 0m</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Connections</div>
+                <div class="metric-value" id="standby-connections">12</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">QPS</div>
+                <div class="metric-value" id="standby-qps">0</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Latency</div>
+                <div class="metric-value" id="standby-latency">1.8ms</div>
+            </div>
+        </div>
+
+        <div class="heartbeat">
+            <span>Last Heartbeat</span>
+            <span id="standby-heartbeat">오전 1:26:34</span>
+        </div>
+    </div>
+
+    <!-- Kubernetes Selector Card -->
+    <div class="card k8s-selector">
+        <div class="card-header">
+            <div class="card-title">
+                <div>☸️ Kubernetes Service Selector</div>
+            </div>
+        </div>
+
+        <div class="k8s-info">
+            <div class="k8s-item">
+                <div class="k8s-label">Current Target</div>
+                <div class="k8s-value">
+                    <span class="target-indicator" id="k8s-target">active</span>
+                </div>
+            </div>
+            <div class="k8s-item">
+                <div class="k8s-label">Target Endpoint</div>
+                <div class="k8s-value" id="k8s-endpoint">mysql-active:3306</div>
+            </div>
+            <div class="k8s-item">
+                <div class="k8s-label">Last Switched</div>
+                <div class="k8s-value" id="k8s-switched">오전 1:20:00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Synchronization Metrics Card -->
+    <div class="card sync-section">
+        <div class="card-header">
+            <div class="card-title">Synchronization Metrics</div>
+        </div>
+
+        <div class="sync-rate-display">
+            <div class="section-header">Sync Rate</div>
+            <div class="sync-percentage" id="sync-rate">99.80%</div>
+            <div class="sync-bar">
+                <div class="sync-bar-fill" id="sync-bar-fill" style="width: 99.8%"></div>
+            </div>
+        </div>
+
+        <div class="sync-details">
+            <div class="metric-item">
+                <div class="metric-label">Replication Lag</div>
+                <div class="metric-value" id="replication-lag">0.50s</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Data Transferred</div>
+                <div class="metric-value" id="data-transferred">2.40 GB</div>
+            </div>
+        </div>
+
+        <div class="sync-details">
+            <div class="binlog-position">
+                <div class="binlog-label">Active DB</div>
+                <div class="binlog-value" id="active-binlog">mysql-bin.000123:45678901</div>
+            </div>
+            <div class="binlog-position">
+                <div class="binlog-label">Standby DB</div>
+                <div class="binlog-value" id="standby-binlog">mysql-bin.000123:45678899</div>
+            </div>
+        </div>
+
+        <div class="heartbeat">
+            <span>Last Sync</span>
+            <span id="last-sync-time">오전 1:22:11</span>
+        </div>
+    </div>
+
+    <!-- Replication Activity Card -->
+    <div class="card sync-section">
+        <div class="card-header">
+            <div class="card-title">Replication Activity</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="replication-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Binlog Events -->
+<div class="dashboard-grid events-grid">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Binlog Events</div>
+            <div class="section-header">Real-time</div>
+        </div>
+        <div id="binlog-events">
+            <div class="event-item update">
+                <div class="event-header">
+                    <span class="event-badge update">UPDATE</span>
+                    <span class="event-db-label active">active</span>
+                </div>
+                <div class="event-binlog">mysql-bin.000123:45678850</div>
+                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>
+                <div class="event-time">오전 1:22:06</div>
+            </div>
+
+            <div class="event-item update">
+                <div class="event-header">
+                    <span class="event-badge update">UPDATE</span>
+                    <span class="event-db-label standby">standby</span>
+                </div>
+                <div class="event-binlog">mysql-bin.000123:45678850</div>
+                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>
+                <div class="event-time">오전 1:22:06</div>
+            </div>
+
+            <div class="event-item delete">
+                <div class="event-header">
+                    <span class="event-badge delete">DELETE</span>
+                    <span class="event-db-label active">active</span>
+                </div>
+                <div class="event-binlog">mysql-bin.000123:45678800</div>
+                <div class="event-query">DELETE FROM sessions WHERE expired_at < NOW()</div>
+                <div class="event-time">오전 1:22:01</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Events -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">System Events</div>
+            <div class="section-header">Last 24 hours</div>
+        </div>
+        <div id="system-events">
+            <div class="system-event success">
+                <div class="event-icon">✓</div>
+                <div class="event-content">
+                    <div class="event-title">Synchronization completed successfully</div>
+                    <div class="event-description">Binlog position: mysql-bin.000123:45678901</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:22:09</div>
+                </div>
+                <span class="event-type-badge sync">sync</span>
+            </div>
+
+            <div class="system-event info">
+                <div class="event-icon">ℹ</div>
+                <div class="event-content">
+                    <div class="event-title">Heartbeat received from Standby DB</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:41</div>
+                </div>
+                <span class="event-type-badge connection">connection</span>
+            </div>
+
+            <div class="system-event warning">
+                <div class="event-icon">⚠</div>
+                <div class="event-content">
+                    <div class="event-title">Replication lag increased to 2.5 seconds</div>
+                    <div class="event-description">Lag returned to normal after 15 seconds</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:11</div>
+                </div>
+                <span class="event-type-badge performance">performance</span>
+            </div>
+
+            <div class="system-event success">
+                <div class="event-icon">✓</div>
+                <div class="event-content">
+                    <div class="event-title">Active DB recovered and re-synchronized</div>
+                    <div class="event-description">Transferred 1.2 GB of data from Standby DB</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:20:11</div>
+                </div>
+                <span class="event-type-badge recovery">recovery</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const initialData = /*[[${initialData}]]*/ {};
+    let replicationChart = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (initialData) {
+            updateDashboard(initialData);
+        }
+        initReplicationChart();
+        setInterval(fetchAndUpdate, 3000);
+    });
+
+    async function fetchAndUpdate() {
+        try {
+            const response = await fetch('/replication/api/dashboard');
+            if (!response.ok) return;
+            const data = await response.json();
+            updateDashboard(data);
+        } catch (error) {
+            console.error('Failed to fetch dashboard data:', error);
+        }
+    }
+
+    function updateDashboard(data) {
+        document.getElementById('connection-status').textContent = data.isConnected ? 'Connected' : 'Disconnected';
+
+        if (data.activeDb) {
+            updateDatabaseCard('active', data.activeDb);
+        }
+
+        if (data.standbyDb) {
+            updateDatabaseCard('standby', data.standbyDb);
+        }
+
+        if (data.kubernetesSelector) {
+            document.getElementById('k8s-target').textContent = data.kubernetesSelector.currentTarget || '-';
+            document.getElementById('k8s-endpoint').textContent = data.kubernetesSelector.targetEndpoint || '-';
+            document.getElementById('k8s-switched').textContent = data.kubernetesSelector.switchedAt || '-';
+        }
+
+        if (data.syncMetrics) {
+            const syncRate = data.syncMetrics.syncRate || 0;
+            document.getElementById('sync-rate').textContent = syncRate.toFixed(2) + '%';
+            document.getElementById('sync-bar-fill').style.width = syncRate + '%';
+            document.getElementById('replication-lag').textContent = data.syncMetrics.replicationLag || '-';
+            document.getElementById('data-transferred').textContent = data.syncMetrics.dataTransferred || '-';
+            document.getElementById('active-binlog').textContent = data.syncMetrics.activeBinlogPosition || '-';
+            document.getElementById('standby-binlog').textContent = data.syncMetrics.standbyBinlogPosition || '-';
+            document.getElementById('last-sync-time').textContent = data.syncMetrics.lastSyncTime || '-';
+        }
+
+        if (data.replicationActivity) {
+            updateReplicationActivity(data.replicationActivity);
+        }
+    }
+
+    function updateDatabaseCard(type, dbData) {
+        document.getElementById(type + '-uptime').textContent = dbData.uptime || '-';
+        document.getElementById(type + '-connections').textContent = dbData.connections || '-';
+        document.getElementById(type + '-qps').textContent = dbData.qps || '-';
+        document.getElementById(type + '-latency').textContent = dbData.latency || '-';
+        document.getElementById(type + '-heartbeat').textContent = dbData.lastHeartbeat || '-';
+
+        const statusBadge = document.getElementById(type + '-status');
+        statusBadge.textContent = dbData.status;
+        statusBadge.className = 'status-badge';
+
+        if (dbData.status === 'Active') {
+            statusBadge.classList.add('active');
+        } else if (dbData.status === 'Standby') {
+            statusBadge.classList.add('standby');
+        } else {
+            statusBadge.classList.add('down');
+        }
+    }
+
+    function updateReplicationActivity(activityData) {
+        if (!activityData.activeDbWrites || !activityData.standbyDbWrites) {
+            updateMockData();
+            return;
+        }
+
+        const labels = activityData.activeDbWrites.map((_, i) => i);
+        const activeData = activityData.activeDbWrites.map(d => d.count);
+        const standbyData = activityData.standbyDbWrites.map(d => d.count);
+
+        replicationChart.data.labels = labels;
+        replicationChart.data.datasets[0].data = activeData;
+        replicationChart.data.datasets[1].data = standbyData;
+        replicationChart.update('none');
+    }
+
+    function initReplicationChart() {
+        const ctx = document.getElementById('replication-chart').getContext('2d');
+
+        const labels = Array.from({length: 30}, (_, i) => i);
+        const activeData = Array.from({length: 30}, () => Math.floor(Math.random() * 50) + 100);
+        const standbyData = Array.from({length: 30}, () => Math.floor(Math.random() * 50) + 95);
+
+        replicationChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Active DB Writes',
+                        data: activeData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Standby DB Writes',
+                        data: standbyData,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#64748b'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#64748b'
+                        },
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.5)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateMockData() {
+        replicationChart.data.datasets[0].data.shift();
+        replicationChart.data.datasets[0].data.push(Math.floor(Math.random() * 50) + 100);
+        replicationChart.data.datasets[1].data.shift();
+        replicationChart.data.datasets[1].data.push(Math.floor(Math.random() * 50) + 95);
+        replicationChart.update('none');
+    }
+    /*]]>*/
+</script>
+</body>
+</html>

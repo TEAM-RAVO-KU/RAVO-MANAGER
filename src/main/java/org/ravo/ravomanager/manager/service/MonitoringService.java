@@ -1,6 +1,6 @@
-package org.ravo.ravomanager.service;
+package org.ravo.ravomanager.manager.service;
 
-import org.ravo.ravomanager.data.dto.MetricData;
+import org.ravo.ravomanager.manager.data.dto.MetricData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;

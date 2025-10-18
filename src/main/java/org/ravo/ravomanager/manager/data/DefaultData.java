@@ -1,4 +1,4 @@
-package org.ravo.ravomanager.data;
+package org.ravo.ravomanager.manager.data;
 
 import org.springframework.stereotype.Component;
 
