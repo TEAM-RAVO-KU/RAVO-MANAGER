@@ -1,46 +1,59 @@
 package org.ravo.ravomanager.manager.controller;
 
-import org.ravo.ravomanager.manager.monitoring.MetricData;
-import org.ravo.ravomanager.manager.service.MonitoringService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.ravo.ravomanager.manager.dto.DashboardResponseDto;
+import org.ravo.ravomanager.manager.service.SyncMonitorService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.slf4j.Logger; // Logger import 추가
-import org.slf4j.LoggerFactory; // LoggerFactory import 추가
-
+/**
+ * 데이터베이스 복제 모니터링 컨트롤러
+ * Active/Standby DB의 동기화 상태 및 성능 지표를 모니터링하는 대시보드를 제공합니다.
+ */
+@Slf4j
 @Controller
-public class DashboardController {
+@RequestMapping("/replication")
+@RequiredArgsConstructor
+public class SyncMonitorController {
 
-    private static final Logger log = LoggerFactory.getLogger(MonitoringService.class);
+    private static final String REPLICATION_MONITOR_VIEW = "manager/replication-monitor";
+    private static final String INITIAL_DATA_ATTRIBUTE = "initialData";
 
-    private final MonitoringService monitoringService;
+    private final SyncMonitorService syncMonitorService;
 
-    public DashboardController(MonitoringService monitoringService) {
-        this.monitoringService = monitoringService;
+    /**
+     * 복제 모니터 대시보드 페이지를 반환합니다.
+     * 
+     * @param model 뷰에 전달할 데이터 모델
+     * @return 복제 모니터 뷰 이름
+     */
+    @GetMapping("/monitor")
+    public String showMonitorPage(Model model) {
+        log.info("복제 모니터 페이지 요청");
+        
+        DashboardResponseDto initialData = syncMonitorService.getDashboardData();
+        model.addAttribute(INITIAL_DATA_ATTRIBUTE, initialData);
+        
+        log.debug("초기 데이터 로드 완료: {}", initialData);
+        return REPLICATION_MONITOR_VIEW;
     }
 
-    @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        // block()을 사용하여 동기적으로 데이터를 가져옵니다.
-        Map<String, MetricData> metrics = monitoringService.fetchMetrics().block();
-
-        // Null 체크 및 방어 코드 추가
-        // metrics 맵 자체가 null일 경우를 대비해 빈 맵으로 초기화합니다.
-        if (metrics == null) {
-            metrics = new HashMap<>();
-        }
-
-        // "active"와 "standby" 데이터가 없으면, 템플릿 오류 방지를 위해 비어있는 객체를 생성
-        metrics.putIfAbsent("active", new MetricData("Active (Not Found)"));
-        metrics.putIfAbsent("standby", new MetricData("Standby (Not Found)"));
-
-        log.info("[DashboardController] Metrics Size : " + metrics.size());
-
-        model.addAttribute("initialData", metrics);
-        return "manager/dashboard";
+    /**
+     * 대시보드 실시간 갱신용 데이터 API
+     * 
+     * @return 현재 대시보드 데이터
+     */
+    @GetMapping("/api/dashboard")
+    @ResponseBody
+    public ResponseEntity<DashboardResponseDto> getDashboardData() {
+        log.debug("대시보드 데이터 API 요청");
+        
+        DashboardResponseDto dashboardData = syncMonitorService.getDashboardData();
+        return ResponseEntity.ok(dashboardData);
     }
 }
