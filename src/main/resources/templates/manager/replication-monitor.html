@@ -991,8 +991,8 @@
 
     async function fetchAndUpdate() {
         try {
-            console.log('Fetching from /replication/api/dashboard');
-            const response = await fetch('/replication/api/dashboard');
+            console.log('Fetching from /api/dashboard');
+            const response = await fetch('/api/dashboard');
             console.log('Response status:', response.status, response.ok);
             
             if (!response.ok) {

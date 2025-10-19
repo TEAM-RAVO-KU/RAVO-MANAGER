@@ -3,7 +3,7 @@ package org.ravo.ravomanager.manager.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ravo.ravomanager.manager.dto.DashboardResponseDto;
-import org.ravo.ravomanager.manager.service.SyncMonitorService;
+import org.ravo.ravomanager.manager.service.DashboardService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,14 +17,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
  */
 @Slf4j
 @Controller
-@RequestMapping("/replication")
 @RequiredArgsConstructor
-public class SyncMonitorController {
+public class DashboardController {
 
     private static final String REPLICATION_MONITOR_VIEW = "manager/replication-monitor";
     private static final String INITIAL_DATA_ATTRIBUTE = "initialData";
 
-    private final SyncMonitorService syncMonitorService;
+    private final DashboardService dashboardService;
 
     /**
      * 복제 모니터 대시보드 페이지를 반환합니다.
@@ -32,11 +31,11 @@ public class SyncMonitorController {
      * @param model 뷰에 전달할 데이터 모델
      * @return 복제 모니터 뷰 이름
      */
-    @GetMapping("/monitor")
+    @GetMapping("/dashboard")
     public String showMonitorPage(Model model) {
         log.info("복제 모니터 페이지 요청");
         
-        DashboardResponseDto initialData = syncMonitorService.getDashboardData();
+        DashboardResponseDto initialData = dashboardService.getDashboardData();
         model.addAttribute(INITIAL_DATA_ATTRIBUTE, initialData);
         
         log.debug("초기 데이터 로드 완료: {}", initialData);
@@ -53,7 +52,7 @@ public class SyncMonitorController {
     public ResponseEntity<DashboardResponseDto> getDashboardData() {
         log.debug("대시보드 데이터 API 요청");
         
-        DashboardResponseDto dashboardData = syncMonitorService.getDashboardData();
+        DashboardResponseDto dashboardData = dashboardService.getDashboardData();
         return ResponseEntity.ok(dashboardData);
     }
 }

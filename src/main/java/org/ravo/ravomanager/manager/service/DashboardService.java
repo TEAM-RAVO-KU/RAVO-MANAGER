@@ -17,9 +17,9 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class SyncMonitorService {
+public class DashboardService {
 
-    private static final Logger log = LoggerFactory.getLogger(SyncMonitorService.class);
+    private static final Logger log = LoggerFactory.getLogger(DashboardService.class);
 
     private final MonitoringService monitoringService;
     private final KubernetesStatusService k8sStatusService;
