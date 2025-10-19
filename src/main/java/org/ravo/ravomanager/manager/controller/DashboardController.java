@@ -1,6 +1,6 @@
 package org.ravo.ravomanager.manager.controller;
 
-import org.ravo.ravomanager.manager.data.dto.MetricData;
+import org.ravo.ravomanager.manager.monitoring.MetricData;
 import org.ravo.ravomanager.manager.service.MonitoringService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
