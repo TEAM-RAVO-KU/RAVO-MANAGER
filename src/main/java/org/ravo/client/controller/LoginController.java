@@ -2,6 +2,7 @@ package org.ravo.client.controller;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.ravo.client.domain.User;
 import org.ravo.client.service.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,6 +13,13 @@ import org.springframework.web.bind.annotation.*;
 public class LoginController {
 
     private final UserService userService;
+
+    /** 루트 접근 처리: 세션 여부에 따라 로그인/계좌로 라우팅 */
+    @GetMapping({"/", ""})
+    public String root(HttpSession session) {
+        User user = (User) session.getAttribute("loginUser");
+        return (user == null) ? "redirect:/login" : "redirect:/bank";
+    }
 
     /** 로그인 페이지 */
     @GetMapping("/login")
@@ -25,7 +33,6 @@ public class LoginController {
                         @RequestParam String password,
                         HttpSession session,
                         Model model) {
-
         return userService.login(userId, password)
                 .map(user -> {
                     session.setAttribute("loginUser", user);
@@ -66,6 +73,4 @@ public class LoginController {
         session.invalidate();
         return "redirect:/login";
     }
-
-
 }
