@@ -1,161 +1,427 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>RAVO Bank 계좌</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <!-- (선택) Spring Security CSRF 메타 -->
+    <meta name="_csrf" th:content="${_csrf?.token}" />
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}" />
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
     <style>
-        body {
-            background-color: #f8f9fa;
-            padding: 2rem;
-            font-family: 'Segoe UI', sans-serif;
-        }
+        body { background:#f8f9fa; padding:2rem; font-family:'Segoe UI', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; }
+        .account-card { background:#fff; border-radius:16px; padding:2.5rem; box-shadow:0 4px 10px rgba(0,0,0,.06); width:min(720px, 92vw); margin:auto; }
+        .username { font-size:1.1rem; font-weight:600; color:#333; }
 
-        .account-card {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            max-width: 420px;
-            margin: auto;
-            text-align: center;
-        }
+        /* 상단 컨트롤/상태 */
+        .control-bar { display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; margin-bottom:1rem; }
+        .control-bar .btn { min-width:160px; }
+        .status-pill { display:none; align-items:center; gap:.4rem; justify-content:center; margin-bottom:.75rem; }
+        .status-pill.show { display:flex; }
+        .status-pill .dot { width:8px; height:8px; border-radius:50%; background:#dc3545; animation: blink 1.1s infinite; }
+        @keyframes blink { 50% { opacity:.3; } }
 
-        .username {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #333;
-        }
+        /* 계좌번호 */
+        .acct-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
+        .acct-badge { font-weight:700; letter-spacing:.3px; padding:.35rem .65rem; border-radius:.65rem; background:#f1f3f5; border:1px solid #e9ecef; }
+        .copy-btn { border:1px solid #e9ecef; background:#fff; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+        .copy-btn:hover { background:#f8f9fa; }
 
-        .balance-area {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin: 1rem 0;
-        }
+        .balance-area { display:flex; align-items:center; justify-content:center; gap:.5rem; margin:1.25rem 0 1.75rem; }
+        .balance { font-size:2.4rem; font-weight:800; color:#111; margin:0; }
 
-        .balance {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #000;
-            margin: 0;
-        }
+        /* 거래 입력 폼 */
+        .tx-grid { display:grid; grid-template-columns: 1fr; gap:1rem; }
+        .tx-box { display:flex; gap:.75rem; }
+        .tx-input { flex:1; border-radius:12px; border:1px solid #ced4da; padding:.8rem 1rem; font-size:1rem; height:52px; }
+        .btn-action { border:none; border-radius:12px; font-weight:700; min-width:140px; height:52px; font-size:1rem; }
+        .btn-deposit { background:#e9ecef; color:#212529; }
+        .btn-deposit:hover { background:#dee2e6; }
+        .btn-withdraw, .btn-transfer { background:#ffcc00; color:#212529; }
+        .btn-withdraw:hover, .btn-transfer:hover { background:#f1c40f; }
 
-        .refresh-btn {
-            border: none;
-            background: none;
-            color: #6c757d;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
+        .transfer-fields { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; flex:1; }
+        @media (max-width: 520px) { .transfer-fields { grid-template-columns:1fr; } }
 
-        .refresh-btn:hover {
-            color: #212529;
-            transform: rotate(90deg);
-        }
+        /* 토스트 */
+        .toast-fixed { position:fixed; right:24px; bottom:24px; z-index:1060; background:rgba(0,0,0,.85); color:#fff; padding:.75rem 1rem; border-radius:10px; font-size:.95rem; opacity:0; transform:translateY(10px); transition:all .25s ease; }
+        .toast-fixed.show { opacity:1; transform:translateY(0); }
 
-        .tx-input {
-            width: 100%;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            padding: 0.6rem;
-            text-align: right;
-            font-size: 1rem;
-        }
-
-        .btn-action {
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            width: 48%;
-            padding: 0.8rem;
-        }
-
-        .btn-deposit {
-            background-color: #e9ecef;
-            color: #212529;
-        }
-
-        .btn-withdraw {
-            background-color: #ffcc00;
-            color: #212529;
-        }
-
-        .btn-deposit:hover {
-            background-color: #dee2e6;
-        }
-
-        .btn-withdraw:hover {
-            background-color: #f1c40f;
-        }
-
-        .tx-box {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1rem;
-            gap: 0.5rem;
-        }
-
-        .logout-btn {
-            border: none;
-            background: none;
-            color: #6c757d;
-            font-size: 0.9rem;
-            cursor: pointer;
-            margin-top: 1rem;
-            text-decoration: underline;
-        }
+        /* 비활성화 시 시각적 피드백 */
+        .disabled { opacity:.6; cursor:not-allowed !important; }
     </style>
 </head>
-
 <body>
 <div class="account-card">
     <p class="text-secondary mb-1">RAVO Bank</p>
     <p class="username" th:text="${username}">홍길동</p>
-    <hr>
+    <hr/>
 
+    <!-- ✅ 상태 배지 (비차단 안내) -->
+    <div id="statusPill" class="status-pill alert alert-warning py-2 mb-2">
+        <span class="dot"></span>
+        <strong>Failover 감지</strong> · 자동 재시도 중입니다. 서비스는 계속 시도됩니다.
+    </div>
+
+    <!-- ✅ 상단 컨트롤 -->
+    <div class="control-bar">
+        <button type="button" id="btnDown" class="btn btn-outline-danger btn-sm" onclick="ctrlActiveDb('down')">
+            <i class="bi bi-plug-fill me-1"></i>Active DB Down
+        </button>
+        <button type="button" id="btnUp" class="btn btn-outline-success btn-sm" onclick="ctrlActiveDb('up')">
+            <i class="bi bi-plug me-1"></i>Active DB Up
+        </button>
+        <button type="button" id="btnRefresh" class="btn btn-outline-secondary btn-sm" onclick="loadBalance(true)">
+            <i class="bi bi-arrow-clockwise me-1"></i>잔액 새로고침
+        </button>
+    </div>
+
+    <!-- ✅ 내 계좌번호 + 복사 -->
+    <div class="acct-row mb-1">
+        <span class="text-muted">내 계좌번호</span>
+    </div>
+    <div class="acct-row mb-3">
+        <span class="acct-badge" id="acctNo">-</span>
+        <button type="button" class="copy-btn" id="copyBtn" onclick="copyAcctNo()" title="계좌번호 복사">
+            <i class="bi bi-clipboard"></i>
+        </button>
+    </div>
+
+    <!-- ✅ 잔액 -->
     <p class="text-muted mb-0">현재 잔액</p>
-
     <div class="balance-area">
-        <p class="balance mb-0">
-            <span th:text="${balance}">11000</span> 원
-        </p>
-        <!-- 🔄 새로고침 버튼 -->
-        <form method="get" action="/bank/balance" class="d-inline">
-            <button type="submit" class="refresh-btn" title="잔액 새로고침">
-                <i class="bi bi-arrow-clockwise"></i>
-            </button>
-        </form>
+        <p class="balance mb-0"><span id="balance">-</span> 원</p>
     </div>
 
-    <!-- 입금 -->
-    <div class="tx-box">
-        <form method="post" action="/bank/deposit" class="d-flex w-100 justify-content-between align-items-center">
-            <input type="number" name="amount" class="tx-input" placeholder="입금 금액" min="1" required>
-            <button type="submit" class="btn btn-deposit btn-action ms-2">입금</button>
-        </form>
+    <!-- ✅ 거래 폼 (비차단) -->
+    <div class="tx-grid">
+        <!-- 입금 -->
+        <div class="tx-box">
+            <form id="formDeposit" class="w-100 d-flex">
+                <input type="hidden" name="requestId" id="depRequestId" />
+                <input type="text" name="amount" class="tx-input js-amount" placeholder="입금 금액 (예: 10,000)" inputmode="numeric" autocomplete="off" required />
+                <button type="submit" class="btn btn-deposit btn-action ms-2">입금</button>
+            </form>
+        </div>
+
+        <!-- 출금 -->
+        <div class="tx-box">
+            <form id="formWithdraw" class="w-100 d-flex">
+                <input type="hidden" name="requestId" id="wdRequestId" />
+                <input type="text" name="amount" class="tx-input js-amount" placeholder="출금 금액 (예: 5,000)" inputmode="numeric" autocomplete="off" required />
+                <button type="submit" class="btn btn-withdraw btn-action ms-2">출금</button>
+            </form>
+        </div>
+
+        <!-- 송금 -->
+        <div class="tx-box">
+            <form id="formTransfer" class="w-100 d-flex">
+                <input type="hidden" name="requestId" id="trfRequestId" />
+                <div class="transfer-fields">
+                    <input type="text" name="toAccountNo" class="tx-input" placeholder="수취 계좌번호 (RAVO-****)" required />
+                    <input type="text" name="amount" class="tx-input js-amount" placeholder="송금 금액 (예: 20,000)" inputmode="numeric" autocomplete="off" required />
+                </div>
+                <button type="submit" class="btn btn-transfer btn-action ms-2">송금</button>
+            </form>
+        </div>
     </div>
 
-    <!-- 출금 -->
-    <div class="tx-box">
-        <form method="post" action="/bank/withdraw" class="d-flex w-100 justify-content-between align-items-center">
-            <input type="number" name="amount" class="tx-input" placeholder="출금 금액" min="1" required>
-            <button type="submit" class="btn btn-withdraw btn-action ms-2">출금</button>
-        </form>
-    </div>
+    <!-- ✅ 토스트 -->
+    <div id="toast" class="toast-fixed"></div>
 
-    <!-- 오류 메시지 (잔액 부족 등) -->
-    <p class="text-danger mt-3" th:text="${error}"></p>
-
-    <!-- 로그아웃 버튼 -->
-    <form method="get" action="/logout">
-        <button type="submit" class="logout-btn">로그아웃</button>
+    <form method="get" action="/logout" class="mt-2">
+        <button type="submit" class="btn btn-link text-secondary p-0">로그아웃</button>
     </form>
 </div>
+
+<script>
+    // ---- CSRF (있는 경우에만 자동 사용) ----
+    const csrfToken  = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+    const baseHeaders = {'X-Requested-With':'XMLHttpRequest'};
+    if (csrfHeader && csrfToken) baseHeaders[csrfHeader] = csrfToken;
+
+    // ---- Helpers ----
+    function rid(prefix){
+      return (crypto?.randomUUID ? `${prefix}-${crypto.randomUUID()}` : `${prefix}-${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`);
+    }
+    function showToast(msg){
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(()=> t.classList.remove('show'), 1800);
+    }
+    function formatAmount(n){
+      if (n === null || n === undefined || n === '') return '';
+      const num = typeof n === 'number' ? n : parseAmount(n);
+      if (isNaN(num)) return '';
+      return num.toLocaleString('ko-KR');
+    }
+    function parseAmount(str){
+      if (typeof str === 'number') return str;
+      const onlyDigits = String(str).replace(/[^\d]/g,'');
+      return onlyDigits ? parseInt(onlyDigits, 10) : 0;
+    }
+    function setBalance(v){
+      document.getElementById('balance').textContent = formatAmount(v);
+    }
+    function setAccountNo(v){ document.getElementById('acctNo').textContent = v || '-'; }
+    function setStatusPill(on){
+      const pill = document.getElementById('statusPill');
+      if (on) pill.classList.add('show'); else pill.classList.remove('show');
+    }
+
+    // ✅ 금액 입력창(., 공백 등 제거 → 3자리 콤마 포맷)
+    function bindAmountFormatter(){
+      const inputs = document.querySelectorAll('.js-amount');
+      inputs.forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const caretEnd = inp.selectionEnd; // 간단 처리 (엄밀한 caret 보정은 생략)
+          const raw = inp.value;
+          const num = parseAmount(raw);
+          inp.value = num ? num.toLocaleString('ko-KR') : '';
+          // selection 복원은 생략(일반적 입력에는 큰 문제 없음)
+        });
+        inp.addEventListener('blur', ()=>{
+          // 빈 값이면 0으로 두지 않고 빈칸 유지
+          if (inp.value.trim() === '') return;
+          const num = parseAmount(inp.value);
+          inp.value = num ? num.toLocaleString('ko-KR') : '';
+        });
+      });
+    }
+
+    // ✅ 금융 기능(입금/출금/송금/복사/잔액 새로 고침)만 비활성/활성
+    function setFinanceControlsEnabled(on){
+      const selectors = [
+        '#formDeposit input',  '#formDeposit button[type="submit"]',
+        '#formWithdraw input', '#formWithdraw button[type="submit"]',
+        '#formTransfer input', '#formTransfer button[type="submit"]',
+        '#copyBtn',
+        '#btnRefresh'
+      ];
+      document.querySelectorAll(selectors.join(',')).forEach(el => {
+        if (!el) return;
+        el.disabled = !on;
+        el.classList.toggle('disabled', !on);
+        if (!on) el.setAttribute('aria-busy','true'); else el.removeAttribute('aria-busy');
+      });
+    }
+
+    // ✅ Failover 완료 대기: balance 1회 성공 시 재활성화
+    async function waitForFailoverAndEnable(){
+      setStatusPill(true);
+      setFinanceControlsEnabled(false);
+
+      const maxWaitMs = 30000;
+      const interval  = 500;    // 0.5초 간격으로 failover 완료 여부 체크
+      const start     = Date.now();
+
+      while (Date.now() - start < maxWaitMs){
+        try {
+          const res  = await fetch('/bank/api/balance', { headers: baseHeaders });
+          const data = await res.json().catch(()=> ({}));
+          if (res.ok && data?.ok){
+            setAccountNo(data.accountNo);
+            setBalance(data.balance);
+            setFinanceControlsEnabled(true);
+            setStatusPill(false);
+            showToast('Failover 완료 · 다시 이용하실 수 있어요');
+            return;
+          }
+        } catch (_) { /* 무시 */ }
+        await new Promise(r => setTimeout(r, interval));
+      }
+      showToast('Failover 지연 · 잠시 후 다시 시도해주세요');
+    }
+
+    // ---- 공통 요청(자동 재시도) ----
+    async function requestWithFailover(url, options = {}, labelForToast = '요청') {
+    const maxRetries = 4;
+    const baseDelay  = 500;
+    let attempt = 0;
+
+    while (true) {
+      try {
+        const res  = await fetch(url, options);
+        const data = await res.json().catch(() => ({}));
+
+        // ✅ 비즈니스 실패: 200 + { ok:false } → 배너/재시도 X, 그냥 반환
+        if (res.ok && data && data.ok === false) {
+          return data;
+        }
+
+        // ✅ DB 장애만 failover 모드
+        const isDbFail =
+          res.status === 503 || (data && data.error === 'DB_CONNECTION_ERROR');
+
+        if (isDbFail) {
+          attempt++;
+          if (attempt === 1) {
+            setStatusPill(true); // 배너 ON
+            showToast(`DB 오류 감지 · ${labelForToast} 재시도 중…`);
+          }
+          if (attempt > maxRetries) {
+            showToast(`${labelForToast} 실패: DB 장애(재시도 초과)`);
+            throw new Error(data?.message || 'DB 장애');
+          }
+          const backoff = Math.round(baseDelay * Math.pow(1.6, attempt - 1));
+          await new Promise(r => setTimeout(r, backoff));
+          continue; // 재시도
+        }
+
+        // ✅ 그 외 성공 응답
+        if (res.ok) {
+          setStatusPill(false);
+          return data;
+        }
+
+        // ✅ 기타 4xx/5xx: 배너/재시도 없이 에러 처리(원하면 일부만 재시도하도록 커스터마이즈)
+        showToast(data?.message || `${labelForToast} 실패`);
+        return data || { ok: false, message: `${labelForToast} 실패` };
+
+      } catch (e) {
+        // 네트워크 에러 등: 1~2회 정도만 재시도하고 싶다면 여기서 처리 가능
+        attempt++;
+        if (attempt > maxRetries) {
+          showToast(`${labelForToast} 실패: ${e.message}`);
+          throw e;
+        }
+        const backoff = Math.round(baseDelay * Math.pow(1.6, attempt - 1));
+        await new Promise(r => setTimeout(r, backoff));
+      }
+    }
+  }
+
+    // ---- 초기/수동 잔액 로드 ----
+    async function loadBalance(showMsg){
+      try{
+        const data = await requestWithFailover('/bank/api/balance', {headers: baseHeaders}, '잔액 조회');
+        setAccountNo(data.accountNo);
+        setBalance(data.balance);
+        if (showMsg) showToast('잔액이 업데이트되었습니다.');
+      }catch(e){
+        // 실패해도 폼은 비차단. 상태 배지 유지.
+      }
+    }
+
+    // ---- Active DB 제어 ----
+    async function ctrlActiveDb(act){
+      const url = act === 'down' ? '/bank/active-db/down' : '/bank/active-db/up';
+      try{
+        const res  = await fetch(url, {method:'POST', headers: baseHeaders});
+        const data = await res.json().catch(()=> ({}));
+        if (!res.ok || data.ok === false) throw new Error(data.message || '요청 실패');
+
+        showToast(data.message || '완료');
+
+        if (act === 'down'){
+          // ⬇️ 다운 직후 금융 기능 잠시 OFF → 페일오버 완료되면 자동 ON
+          waitForFailoverAndEnable();
+        }else{
+          // Up 직후 잔액 새로고침 (약간의 여유)
+          setTimeout(()=> loadBalance(true), 700);
+        }
+      }catch(e){
+        showToast('요청 실패: ' + e.message);
+      }
+    }
+
+    // ---- 계좌번호 복사 (아이콘 체크 전환) ----
+    function copyAcctNo(){
+      const txt = document.getElementById('acctNo')?.textContent?.trim();
+      const icon = document.querySelector('#copyBtn i');
+      if (!txt || !icon) return;
+      navigator.clipboard.writeText(txt).then(()=>{
+        icon.classList.replace('bi-clipboard','bi-check2');
+        setTimeout(()=> icon.classList.replace('bi-check2','bi-clipboard'), 1200);
+      });
+    }
+
+    // ---- 거래 폼 바인딩 (비차단 + 자동재시도 + 금액 포맷/정규화) ----
+    (function(){
+      bindAmountFormatter();
+
+      const dep = document.getElementById('formDeposit');
+      const wd  = document.getElementById('formWithdraw');
+      const trf = document.getElementById('formTransfer');
+
+      if(dep) dep.addEventListener('submit', async e=>{
+        e.preventDefault();
+        dep.querySelector('#depRequestId').value = rid('DEP');
+
+        const amtInput = dep.querySelector('input[name="amount"]');
+        const amount   = parseAmount(amtInput.value);
+        if (!amount || amount <= 0){ showToast('입금 금액을 올바르게 입력하세요.'); return; }
+
+        // 전송 직전 콤마 제거
+        amtInput.value = String(amount);
+
+        const fd = new FormData(dep);
+        try{
+          const data = await requestWithFailover('/bank/api/deposit', {method:'POST', headers: baseHeaders, body: fd}, '입금');
+          setBalance(data.balance);
+          showToast(data.message || '입금 완료');
+          dep.reset();
+        }catch{ /* 실패해도 비차단 */ }
+        finally{
+          // 폼 초기화 후 포맷 바인딩 유지
+          bindAmountFormatter();
+        }
+      });
+
+      if(wd) wd.addEventListener('submit', async e=>{
+        e.preventDefault();
+        wd.querySelector('#wdRequestId').value = rid('WD');
+
+        const amtInput = wd.querySelector('input[name="amount"]');
+        const amount   = parseAmount(amtInput.value);
+        if (!amount || amount <= 0){ showToast('출금 금액을 올바르게 입력하세요.'); return; }
+
+        amtInput.value = String(amount);
+
+        const fd = new FormData(wd);
+        try{
+          const data = await requestWithFailover('/bank/api/withdraw', {method:'POST', headers: baseHeaders, body: fd}, '출금');
+          if (data.ok === false){ showToast(data.message || '출금 실패'); return; }
+          setBalance(data.balance);
+          showToast(data.message || '출금 완료');
+          wd.reset();
+        }catch{ /* 실패해도 비차단 */ }
+        finally{
+          bindAmountFormatter();
+        }
+      });
+
+      if(trf) trf.addEventListener('submit', async e=>{
+        e.preventDefault();
+        trf.querySelector('#trfRequestId').value = rid('TRF');
+
+        const amtInput = trf.querySelector('input[name="amount"]');
+        const amount   = parseAmount(amtInput.value);
+        if (!amount || amount <= 0){ showToast('송금 금액을 올바르게 입력하세요.'); return; }
+
+        amtInput.value = String(amount);
+
+        const fd = new FormData(trf);
+        try{
+          const data = await requestWithFailover('/bank/api/transfer', {method:'POST', headers: baseHeaders, body: fd}, '송금');
+          if (data.ok === false){ showToast(data.message || '송금 실패'); return; }
+          setBalance(data.balance);
+          showToast(data.message || '송금 완료');
+          trf.reset();
+        }catch{ /* 실패해도 비차단 */ }
+        finally{
+          bindAmountFormatter();
+        }
+      });
+    })();
+
+    // 최초 진입 시 잔액 로드
+    loadBalance(false);
+</script>
 </body>
 </html>
