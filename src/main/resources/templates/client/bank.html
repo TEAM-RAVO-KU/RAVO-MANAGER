@@ -60,10 +60,11 @@
     <p class="username" th:text="${username}">홍길동</p>
     <hr/>
 
-    <!-- ✅ 상태 배지 (비차단 안내) -->
+    <!-- ✅ 상태 배지 -->
     <div id="statusPill" class="status-pill alert alert-warning py-2 mb-2">
         <span class="dot"></span>
-        <strong>Failover 감지</strong> · 자동 재시도 중입니다. 서비스는 계속 시도됩니다.
+        <strong id="statusTitle">알림</strong>
+        <span id="statusText" class="ms-1">상태 안내</span>
     </div>
 
     <!-- ✅ 상단 컨트롤 -->
@@ -144,6 +145,10 @@
     const baseHeaders = {'X-Requested-With':'XMLHttpRequest'};
     if (csrfHeader && csrfToken) baseHeaders[csrfHeader] = csrfToken;
 
+    // ---- 상태 플래그 (배너 충돌 방지) ----
+    let uiLocked = false;     // /ui/status 에서 내려오는 전환 잠금 상태
+    let failoverMode = false; // DB 장애 자동 재시도 중인지 여부
+
     // ---- Helpers ----
     function rid(prefix){
       return (crypto?.randomUUID ? `${prefix}-${crypto.randomUUID()}` : `${prefix}-${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`);
@@ -169,8 +174,14 @@
       document.getElementById('balance').textContent = formatAmount(v);
     }
     function setAccountNo(v){ document.getElementById('acctNo').textContent = v || '-'; }
-    function setStatusPill(on){
+
+    // ✅ 상태 배너를 문구와 함께 제어
+    function setStatusPill(on, titleText = '', descText = ''){
       const pill = document.getElementById('statusPill');
+      const title = document.getElementById('statusTitle');
+      const text  = document.getElementById('statusText');
+      if (titleText) title.textContent = titleText;
+      if (descText)  text.textContent  = `· ${descText}`;
       if (on) pill.classList.add('show'); else pill.classList.remove('show');
     }
 
@@ -179,14 +190,11 @@
       const inputs = document.querySelectorAll('.js-amount');
       inputs.forEach(inp=>{
         inp.addEventListener('input', ()=>{
-          const caretEnd = inp.selectionEnd; // 간단 처리 (엄밀한 caret 보정은 생략)
           const raw = inp.value;
           const num = parseAmount(raw);
           inp.value = num ? num.toLocaleString('ko-KR') : '';
-          // selection 복원은 생략(일반적 입력에는 큰 문제 없음)
         });
         inp.addEventListener('blur', ()=>{
-          // 빈 값이면 0으로 두지 않고 빈칸 유지
           if (inp.value.trim() === '') return;
           const num = parseAmount(inp.value);
           inp.value = num ? num.toLocaleString('ko-KR') : '';
@@ -211,13 +219,14 @@
       });
     }
 
-    // ✅ Failover 완료 대기: balance 1회 성공 시 재활성화
+    // ✅ Failover 완료 대기: balance 1회 성공 시 재활성화 (DOWN 시에만 사용)
     async function waitForFailoverAndEnable(){
-      setStatusPill(true);
+      failoverMode = true;
+      setStatusPill(true, 'Failover 감지', '자동 재시도 중입니다. 서비스는 계속 시도됩니다.');
       setFinanceControlsEnabled(false);
 
       const maxWaitMs = 30000;
-      const interval  = 500;    // 0.5초 간격으로 failover 완료 여부 체크
+      const interval  = 500;
       const start     = Date.now();
 
       while (Date.now() - start < maxWaitMs){
@@ -227,84 +236,121 @@
           if (res.ok && data?.ok){
             setAccountNo(data.accountNo);
             setBalance(data.balance);
-            setFinanceControlsEnabled(true);
-            setStatusPill(false);
-            showToast('Failover 완료 · 다시 이용하실 수 있어요');
+            // 만약 UI Lock이 걸린 상태라면 잠금 해제될 때까지 비활성화를 유지
+            if (!uiLocked) {
+              setFinanceControlsEnabled(true);
+              setStatusPill(false);
+            }
+            failoverMode = false;
             return;
           }
         } catch (_) { /* 무시 */ }
         await new Promise(r => setTimeout(r, interval));
       }
       showToast('Failover 지연 · 잠시 후 다시 시도해주세요');
+      failoverMode = false;
     }
+
+    // ---- /ui/status 폴링 : 백엔드 전환 락(LOCK/UNLOCK)에 반응 ----
+    async function pollUiLockStatus(){
+      try{
+        const res  = await fetch('/ui/status', { headers: baseHeaders });
+        const data = await res.json().catch(()=> ({}));
+        const locked = !!data?.locked;
+
+        if (locked !== uiLocked){
+          uiLocked = locked;
+          if (uiLocked){
+            // 전환 진행 중 잠금
+            setFinanceControlsEnabled(false);
+            setStatusPill(true, '시스템 전환 중', '잠시만 기다려 주세요.');
+          } else {
+            // 전환 해제
+            // failoverMode가 아니면 배너 내리고 버튼 활성화
+            if (!failoverMode) {
+              setFinanceControlsEnabled(true);
+              setStatusPill(false);
+              showToast('전환 완료');
+            }
+          }
+        }
+      }catch(_){ /* 폴링 실패는 조용히 무시 */ }
+    }
+    setInterval(pollUiLockStatus, 500); // 0.5초 간격 폴링
+    // 초기 1회 즉시 체크
+    pollUiLockStatus();
 
     // ---- 공통 요청(자동 재시도) ----
     async function requestWithFailover(url, options = {}, labelForToast = '요청') {
-    const maxRetries = 4;
-    const baseDelay  = 500;
-    let attempt = 0;
+      const maxRetries = 4;
+      const baseDelay  = 500;
+      let attempt = 0;
 
-    while (true) {
-      try {
-        const res  = await fetch(url, options);
-        const data = await res.json().catch(() => ({}));
+      while (true) {
+        try {
+          const res  = await fetch(url, options);
+          const data = await res.json().catch(() => ({}));
 
-        // ✅ 비즈니스 실패: 200 + { ok:false } → 배너/재시도 X, 그냥 반환
-        if (res.ok && data && data.ok === false) {
-          return data;
-        }
-
-        // ✅ DB 장애만 failover 모드
-        const isDbFail =
-          res.status === 503 || (data && data.error === 'DB_CONNECTION_ERROR');
-
-        if (isDbFail) {
-          attempt++;
-          if (attempt === 1) {
-            setStatusPill(true); // 배너 ON
-            showToast(`DB 오류 감지 · ${labelForToast} 재시도 중…`);
+          // ✅ 비즈니스 실패: 200 + { ok:false } → 배너/재시도 X
+          if (res.ok && data && data.ok === false) {
+            return data;
           }
+
+          // ✅ DB 장애만 failover 모드
+          const isDbFail =
+            res.status === 503 || (data && data.error === 'DB_CONNECTION_ERROR');
+
+          if (isDbFail) {
+            attempt++;
+            if (attempt === 1) {
+              failoverMode = true;
+              setStatusPill(true, 'Failover 감지', `${labelForToast} 재시도 중…`);
+            }
+            if (attempt > maxRetries) {
+              showToast(`${labelForToast} 실패: DB 장애(재시도 초과)`);
+              failoverMode = false;
+              throw new Error(data?.message || 'DB 장애');
+            }
+            const backoff = Math.round(baseDelay * Math.pow(1.6, attempt - 1));
+            await new Promise(r => setTimeout(r, backoff));
+            continue;
+          }
+
+          // ✅ 성공
+          if (res.ok) {
+            if (!uiLocked) setStatusPill(false); // 잠금 중이면 배너 유지
+            failoverMode = false;
+            return data;
+          }
+
+          // ✅ 기타 4xx/5xx: 재시도/배너 없이
+          showToast(data?.message || `${labelForToast} 실패`);
+          return data || { ok: false, message: `${labelForToast} 실패` };
+
+        } catch (e) {
+          attempt++;
           if (attempt > maxRetries) {
-            showToast(`${labelForToast} 실패: DB 장애(재시도 초과)`);
-            throw new Error(data?.message || 'DB 장애');
+            showToast(`${labelForToast} 실패: ${e.message}`);
+            failoverMode = false;
+            throw e;
           }
           const backoff = Math.round(baseDelay * Math.pow(1.6, attempt - 1));
           await new Promise(r => setTimeout(r, backoff));
-          continue; // 재시도
         }
-
-        // ✅ 그 외 성공 응답
-        if (res.ok) {
-          setStatusPill(false);
-          return data;
-        }
-
-        // ✅ 기타 4xx/5xx: 배너/재시도 없이 에러 처리(원하면 일부만 재시도하도록 커스터마이즈)
-        showToast(data?.message || `${labelForToast} 실패`);
-        return data || { ok: false, message: `${labelForToast} 실패` };
-
-      } catch (e) {
-        // 네트워크 에러 등: 1~2회 정도만 재시도하고 싶다면 여기서 처리 가능
-        attempt++;
-        if (attempt > maxRetries) {
-          showToast(`${labelForToast} 실패: ${e.message}`);
-          throw e;
-        }
-        const backoff = Math.round(baseDelay * Math.pow(1.6, attempt - 1));
-        await new Promise(r => setTimeout(r, backoff));
       }
     }
-  }
 
     // ---- 초기/수동 잔액 로드 ----
     async function loadBalance(showMsg){
       try{
         const data = await requestWithFailover('/bank/api/balance', {headers: baseHeaders}, '잔액 조회');
-        setAccountNo(data.accountNo);
-        setBalance(data.balance);
-        if (showMsg) showToast('잔액이 업데이트되었습니다.');
+        if (data?.ok) {
+          setAccountNo(data.accountNo);
+          setBalance(data.balance);
+          if (showMsg) showToast('잔액이 업데이트되었습니다.');
+        }
       }catch(e){
-        // 실패해도 폼은 비차단. 상태 배지 유지.
+        /* 실패해도 비차단 */
       }
     }
 
@@ -319,10 +365,10 @@
         showToast(data.message || '완료');
 
         if (act === 'down'){
-          // ⬇️ 다운 직후 금융 기능 잠시 OFF → 페일오버 완료되면 자동 ON
+          // 다운 직후: failover 완료까지 자동 대기 (락은 백엔드가 제어하지 않으므로 FE가 직접 보호)
           waitForFailoverAndEnable();
-        }else{
-          // Up 직후 잔액 새로고침 (약간의 여유)
+        } else {
+          // 업 직후: /lock → /unlock은 백엔드가 수행. FE는 폴링으로 자동 반응.
           setTimeout(()=> loadBalance(true), 700);
         }
       }catch(e){
@@ -357,20 +403,19 @@
         const amount   = parseAmount(amtInput.value);
         if (!amount || amount <= 0){ showToast('입금 금액을 올바르게 입력하세요.'); return; }
 
-        // 전송 직전 콤마 제거
         amtInput.value = String(amount);
-
         const fd = new FormData(dep);
         try{
           const data = await requestWithFailover('/bank/api/deposit', {method:'POST', headers: baseHeaders, body: fd}, '입금');
-          setBalance(data.balance);
-          showToast(data.message || '입금 완료');
-          dep.reset();
+          if (data?.ok) {
+            setBalance(data.balance);
+            showToast(data.message || '입금 완료');
+            dep.reset();
+            bindAmountFormatter();
+          } else if (data?.message) {
+            showToast(data.message);
+          }
         }catch{ /* 실패해도 비차단 */ }
-        finally{
-          // 폼 초기화 후 포맷 바인딩 유지
-          bindAmountFormatter();
-        }
       });
 
       if(wd) wd.addEventListener('submit', async e=>{
@@ -382,18 +427,20 @@
         if (!amount || amount <= 0){ showToast('출금 금액을 올바르게 입력하세요.'); return; }
 
         amtInput.value = String(amount);
-
         const fd = new FormData(wd);
         try{
           const data = await requestWithFailover('/bank/api/withdraw', {method:'POST', headers: baseHeaders, body: fd}, '출금');
-          if (data.ok === false){ showToast(data.message || '출금 실패'); return; }
-          setBalance(data.balance);
-          showToast(data.message || '출금 완료');
-          wd.reset();
+          if (data?.ok === false){
+            showToast(data.message || '출금 실패');
+            return;
+          }
+          if (data?.ok){
+            setBalance(data.balance);
+            showToast(data.message || '출금 완료');
+            wd.reset();
+            bindAmountFormatter();
+          }
         }catch{ /* 실패해도 비차단 */ }
-        finally{
-          bindAmountFormatter();
-        }
       });
 
       if(trf) trf.addEventListener('submit', async e=>{
@@ -405,18 +452,20 @@
         if (!amount || amount <= 0){ showToast('송금 금액을 올바르게 입력하세요.'); return; }
 
         amtInput.value = String(amount);
-
         const fd = new FormData(trf);
         try{
           const data = await requestWithFailover('/bank/api/transfer', {method:'POST', headers: baseHeaders, body: fd}, '송금');
-          if (data.ok === false){ showToast(data.message || '송금 실패'); return; }
-          setBalance(data.balance);
-          showToast(data.message || '송금 완료');
-          trf.reset();
+          if (data?.ok === false){
+            showToast(data.message || '송금 실패');
+            return;
+          }
+          if (data?.ok){
+            setBalance(data.balance);
+            showToast(data.message || '송금 완료');
+            trf.reset();
+            bindAmountFormatter();
+          }
         }catch{ /* 실패해도 비차단 */ }
-        finally{
-          bindAmountFormatter();
-        }
       });
     })();
 
