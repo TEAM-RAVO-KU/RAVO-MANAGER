@@ -17,13 +17,13 @@ import java.util.*;
 public class TableHashService {
 
     private final JdbcTemplate directActiveJdbcTemplate;
-    private final JdbcTemplate standbyJdbcTemplate;
 
-    public TableHashService(@Qualifier("directActiveJdbcTemplate") JdbcTemplate directActiveJdbcTemplate,
-                            @Qualifier("standbyJdbcTemplate") JdbcTemplate standbyJdbcTemplate) {
+    public TableHashService(JdbcTemplate directActiveJdbcTemplate, JdbcTemplate standbyJdbcTemplate) {
         this.directActiveJdbcTemplate = directActiveJdbcTemplate;
         this.standbyJdbcTemplate = standbyJdbcTemplate;
     }
+
+    private final JdbcTemplate standbyJdbcTemplate;
 
     // 동기화 확인할 주요 테이블 목록 (추후 추가 가능)
     private static final List<String> MONITORED_TABLES = List.of(
