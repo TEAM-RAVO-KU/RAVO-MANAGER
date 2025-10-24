@@ -2,11 +2,10 @@ package org.ravo.ravomanager.manager.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ravo.ravomanager.manager.dto.SelectorStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -18,30 +17,21 @@ import java.time.Duration;
  * Kubernetes 상태 조회 서비스
  * 외부 K8s Watcher API에서 현재 서비스 타겟 정보를 가져옵니다.
  */
+
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class KubernetesStatusService {
-
-    private static final Logger log = LoggerFactory.getLogger(KubernetesStatusService.class);
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
-
+    
     @Value("${application.failover.status-url}")
     private String serviceStatusUrl;
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    // 메모리에 상태 저장 (단일 인스턴스 가정)
-    private volatile SelectorStatus cachedStatus;
-
-    public KubernetesStatusService(RestTemplateBuilder restTemplateBuilder, ObjectMapper objectMapper) {
-        this.restTemplate = restTemplateBuilder
-                .connectTimeout(REQUEST_TIMEOUT)
-                .readTimeout(REQUEST_TIMEOUT)
-                .build();
-        this.objectMapper = objectMapper;
-        this.cachedStatus = SelectorStatus.empty();
-    }
-
+    // 메모리에 상태 저장
+    private volatile SelectorStatus cachedStatus = SelectorStatus.empty();
+    
     /**
      * K8s Selector 상태 조회 (동기 방식)
      * Response format: {"service_target": "mysql-active", "watcher_state": "active", ...}
@@ -57,17 +47,17 @@ public class KubernetesStatusService {
             if (response.getStatusCode().is2xxSuccessful() && response.hasBody()) {
                 return parseAndUpdateStatus(response.getBody());
             } else {
-                log.debug("K8s selector status returned non-2xx status: {}", response.getStatusCode());
+                log.warn("K8s selector status returned non-2xx status: {}", response.getStatusCode());
                 return SelectorStatus.empty();
             }
 
         } catch (RestClientException e) {
             // 연결 실패, 타임아웃, HTTP 오류 등
-            log.debug("Failed to fetch K8s selector status: {}", e.getMessage());
+            log.warn("Failed to fetch K8s selector status: {}", e.getMessage());
             return SelectorStatus.empty();
         } catch (Exception e) {
             // 예상치 못한 오류
-            log.debug("Unexpected error while fetching K8s status: {}", e.getMessage());
+            log.warn("Unexpected error while fetching K8s status: {}", e.getMessage());
             return SelectorStatus.empty();
         }
     }
