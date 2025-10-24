@@ -51,16 +51,13 @@ public class DashboardService {
                 log.error("Metrics data is null or empty");
                 return createFallbackResponse();
             }
-            
-            // 2. K8s 상태 조회
-            SelectorStatus selectorStatus = k8sStatusService.fetchStatus()
-                    .timeout(Duration.ofSeconds(5))
-                    .block();
-            
+            // 2. K8s 상태 조회 (동기 방식)
+            SelectorStatus selectorStatus = k8sStatusService.fetchStatus();
+            log.info("Selector status: {}", selectorStatus.getCurrentTarget());
             if (selectorStatus == null) {
                 selectorStatus = SelectorStatus.empty();
             }
-            
+
             // 3. 동기화율 계산
             double syncRate = 0.0;
             SynchronizationMetricsDto synchronizationMetricsDto = synchronizationMetricsService.buildSyncMetrics(
@@ -77,6 +74,7 @@ public class DashboardService {
                     .systemEvents(getSystemEvents())
                     .isConnected(true)
                     .build();
+
         } catch (Exception e) {
             log.error("Fatal error in getDashboardData", e);
             // 에러 발생 시 기본값 반환
