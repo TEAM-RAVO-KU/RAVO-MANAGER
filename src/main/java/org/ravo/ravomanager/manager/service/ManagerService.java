@@ -20,12 +20,12 @@ import java.util.Objects;
 public class ManagerService {
 
     private final DefaultData defaultData;
-    private final JdbcTemplate liveJdbcTemplate;
+    private final JdbcTemplate directActiveJdbcTemplate;
     private final JdbcTemplate standbyJdbcTemplate;
 
-    public ManagerService(@Qualifier("liveJdbcTemplate") JdbcTemplate liveJdbcTemplate,
+    public ManagerService(@Qualifier("directActiveJdbcTemplate") JdbcTemplate directActiveJdbcTemplate,
                           @Qualifier("standbyJdbcTemplate") JdbcTemplate standbyJdbcTemplate) {
-        this.liveJdbcTemplate = liveJdbcTemplate;
+        this.directActiveJdbcTemplate = directActiveJdbcTemplate;
         this.standbyJdbcTemplate = standbyJdbcTemplate;
         this.defaultData = new DefaultData();
     }
@@ -120,14 +120,14 @@ public class ManagerService {
     public Map<String, Object> getAllStatuses() {
         Map<String, Object> statuses = new HashMap<>();
 
-        boolean liveDbAlive = isDbAlive(liveJdbcTemplate);
+        boolean liveDbAlive = isDbAlive(directActiveJdbcTemplate);
         boolean standbyDbAlive = isDbAlive(standbyJdbcTemplate);
 
         statuses.put("liveDbStatus", liveDbAlive);
         statuses.put("standbyDbStatus", standbyDbAlive);
 
         Map<String, Object> liveData = liveDbAlive ?
-                fetchLatestData(liveJdbcTemplate) : defaultData.defaultFetchData("N/A");
+                fetchLatestData(directActiveJdbcTemplate) : defaultData.defaultFetchData("N/A");
         Map<String, Object> standbyData = standbyDbAlive ?
                 fetchLatestData(standbyJdbcTemplate) : defaultData.defaultFetchData("N/A");
 

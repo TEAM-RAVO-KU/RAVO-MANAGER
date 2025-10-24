@@ -21,7 +21,7 @@ public class KubernetesStatusService {
 
     private static final Logger log = LoggerFactory.getLogger(KubernetesStatusService.class);
 
-    @Value("${monitoring.endpoints.service-status:http://121.138.215.117:8888/status}")
+    @Value("${application.failover.status-url}")
     private String serviceStatusUrl;
     
     private final WebClient webClient;

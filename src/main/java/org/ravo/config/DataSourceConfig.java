@@ -32,6 +32,14 @@ public class DataSourceConfig {
     public DataSource batchDataSource() {
         return DataSourceBuilder.create().build();
     }
+
+    @Bean
+    @ConfigurationProperties("spring.datasource.direct")
+    public DataSource directActiveDataSource() {
+        return DataSourceBuilder.create().build();
+    }
+
+
     @Bean
     public JdbcTemplate liveJdbcTemplate(@Qualifier("liveDataSource") DataSource ds) {
         return new JdbcTemplate(ds);
@@ -44,6 +52,11 @@ public class DataSourceConfig {
 
     @Bean
     public JdbcTemplate batchJdbcTemplate(@Qualifier("batchDataSource") DataSource ds) {
+        return new JdbcTemplate(ds);
+    }
+
+    @Bean
+    public JdbcTemplate directActiveJdbcTemplate(@Qualifier("directActiveDataSource") DataSource ds) {
         return new JdbcTemplate(ds);
     }
 }

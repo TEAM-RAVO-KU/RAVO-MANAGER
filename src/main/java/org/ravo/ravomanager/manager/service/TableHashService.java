@@ -14,13 +14,16 @@ import java.util.*;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TableHashService {
 
-    private final JdbcTemplate liveJdbcTemplate;
-
-    @Qualifier("standbyJdbcTemplate")
+    private final JdbcTemplate directActiveJdbcTemplate;
     private final JdbcTemplate standbyJdbcTemplate;
+
+    public TableHashService(@Qualifier("directActiveJdbcTemplate") JdbcTemplate directActiveJdbcTemplate,
+                            @Qualifier("standbyJdbcTemplate") JdbcTemplate standbyJdbcTemplate) {
+        this.directActiveJdbcTemplate = directActiveJdbcTemplate;
+        this.standbyJdbcTemplate = standbyJdbcTemplate;
+    }
 
     // 동기화 확인할 주요 테이블 목록 (추후 추가 가능)
     private static final List<String> MONITORED_TABLES = List.of(
@@ -77,7 +80,7 @@ public class TableHashService {
      */
     private TableSyncInfo compareTableByRows(String tableName) {
         // 행별 해시맵 생성 (key: primary key, value: 행 해시)
-        Map<String, String> activeRowHashes = getRowHashes(liveJdbcTemplate, tableName);
+        Map<String, String> activeRowHashes = getRowHashes(directActiveJdbcTemplate, tableName);
         Map<String, String> standbyRowHashes = getRowHashes(standbyJdbcTemplate, tableName);
 
         long activeCount = activeRowHashes.size();
