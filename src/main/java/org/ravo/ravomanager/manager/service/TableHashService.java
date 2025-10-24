@@ -1,10 +1,9 @@
 package org.ravo.ravomanager.manager.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ravo.ravomanager.manager.domain.SyncStatus;
 import org.ravo.ravomanager.manager.domain.TableSyncInfo;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -17,12 +16,6 @@ import java.util.*;
 public class TableHashService {
 
     private final JdbcTemplate directActiveJdbcTemplate;
-
-    public TableHashService(JdbcTemplate directActiveJdbcTemplate, JdbcTemplate standbyJdbcTemplate) {
-        this.directActiveJdbcTemplate = directActiveJdbcTemplate;
-        this.standbyJdbcTemplate = standbyJdbcTemplate;
-    }
-
     private final JdbcTemplate standbyJdbcTemplate;
 
     // 동기화 확인할 주요 테이블 목록 (추후 추가 가능)
@@ -30,10 +23,86 @@ public class TableHashService {
             "users"
     );
 
+
+    public TableHashService(JdbcTemplate directActiveJdbcTemplate, JdbcTemplate standbyJdbcTemplate) {
+        this.directActiveJdbcTemplate = directActiveJdbcTemplate;
+        this.standbyJdbcTemplate = standbyJdbcTemplate;
+    }
+
     /**
      * Active와 Standby DB의 주요 테이블 동기화 상태를 계산합니다.
+     * 연결 실패 시 캐시된 값 또는 기본값을 반환합니다.
      */
     public SyncStatus calculateSyncStatus() {
+        try {
+            // Active DB 연결 테스트
+            testConnection(directActiveJdbcTemplate, "Active");
+            
+            // Standby DB 연결 테스트
+            testConnection(standbyJdbcTemplate, "Standby");
+
+            // 연결 성공 시 실제 동기화 상태 계산
+            SyncStatus syncStatus = performSyncCalculation();
+            
+            return syncStatus;
+
+        } catch (DataAccessException e) {
+            // DB 연결 실패
+            log.debug("Database connection failed during sync calculation: {}", e.getMessage());
+            return getCachedOrDefault();
+        } catch (Exception e) {
+            // 기타 예외
+            log.debug("Unexpected error during sync calculation: {}", e.getMessage());
+            return getCachedOrDefault();
+        }
+    }
+
+    /**
+     * DB 연결 테스트
+     */
+    private void testConnection(JdbcTemplate jdbcTemplate, String dbName) {
+        try {
+            jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+        } catch (Exception e) {
+            log.debug("{} DB connection test failed: {}", dbName, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * 캐시된 값 또는 기본값 반환
+     */
+    private SyncStatus getCachedOrDefault() {
+
+        log.debug("Returning default sync status");
+        return createDefaultSyncStatus();
+    }
+
+    /**
+     * 기본 Sync Status 생성
+     */
+    private SyncStatus createDefaultSyncStatus() {
+        List<TableSyncInfo> defaultTableInfos = new ArrayList<>();
+        
+        for (String tableName : MONITORED_TABLES) {
+            TableSyncInfo info = new TableSyncInfo();
+            info.setTableName(tableName);
+            info.setActiveHash("N/A");
+            info.setStandbyHash("N/A");
+            info.setSynced(false);
+            info.setActiveCount(0);
+            info.setStandbyCount(0);
+            info.setSyncPercent(0.0);
+            defaultTableInfos.add(info);
+        }
+
+        return new SyncStatus(0.0, defaultTableInfos, MONITORED_TABLES.size(), 0);
+    }
+
+    /**
+     * 실제 동기화 상태 계산 수행
+     */
+    private SyncStatus performSyncCalculation() {
         List<TableSyncInfo> tableInfos = new ArrayList<>();
         int syncedCount = 0;
         double totalSyncPercent = 0.0;
