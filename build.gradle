@@ -37,6 +37,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux' // WebClient 사용을 위해 추가
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0' //swagger, http://localhost:8080/swagger-ui/index.html
 }
 
 tasks.named('test') {

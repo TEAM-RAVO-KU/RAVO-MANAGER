@@ -28,12 +28,22 @@ public class DataSourceConfig {
     }
 
     @Bean
+    @ConfigurationProperties("spring.datasource.batch")
+    public DataSource batchDataSource() {
+        return DataSourceBuilder.create().build();
+    }
+    @Bean
     public JdbcTemplate liveJdbcTemplate(@Qualifier("liveDataSource") DataSource ds) {
         return new JdbcTemplate(ds);
     }
 
     @Bean
     public JdbcTemplate standbyJdbcTemplate(@Qualifier("standbyDataSource") DataSource ds) {
+        return new JdbcTemplate(ds);
+    }
+
+    @Bean
+    public JdbcTemplate batchJdbcTemplate(@Qualifier("batchDataSource") DataSource ds) {
         return new JdbcTemplate(ds);
     }
 }

@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Replication Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            color: #1e293b;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #cbd5e1;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .header-subtitle {
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #16a34a;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #16a34a;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .db-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge.active {
+            background: #dcfce7;
+            color: #16a34a;
+            border: 1px solid #86efac;
+        }
+
+        .status-badge.standby {
+            background: #dbeafe;
+            color: #2563eb;
+            border: 1px solid #93c5fd;
+        }
+
+        .status-badge.down {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .db-role {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .metric-item {
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card-body {
+            padding: 16px 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .metric-card-title {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .metric-card-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        #active-status-card.status-up {
+            background: #dcfce7;
+            border-color: #86efac;
+        }
+
+        #active-status-card.status-up .metric-card-value {
+            color: #16a34a;
+        }
+
+        #standby-status-card.status-up {
+            background: #dcfce7;
+            border-color: #86efac;
+        }
+
+        #standby-status-card.status-up .metric-card-value {
+            color: #16a34a;
+        }
+
+        #standby-status-card.status-standby {
+            background: #dbeafe;
+            border-color: #93c5fd;
+        }
+
+        #standby-status-card.status-standby .metric-card-value {
+            color: #2563eb;
+        }
+
+        #active-status-card.status-down,
+        #standby-status-card.status-down {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        #active-status-card.status-down .metric-card-value,
+        #standby-status-card.status-down .metric-card-value {
+            color: #dc2626;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .heartbeat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .sync-section {
+            grid-column: 1 / -1;
+        }
+
+        .sync-rate-display {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .sync-percentage {
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sync-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .sync-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6 0%, #16a34a 100%);
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        .sync-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .binlog-position {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .binlog-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .binlog-value {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #2563eb;
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .event-item {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 3px solid;
+            margin-bottom: 12px;
+        }
+
+        .event-item.update {
+            border-left-color: #f59e0b;
+        }
+
+        .event-item.delete {
+            border-left-color: #ef4444;
+        }
+
+        .event-item.insert {
+            border-left-color: #16a34a;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .event-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .event-badge.update {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .event-badge.delete {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .event-db-label {
+            padding: 4px 10px;
+            background: #dbeafe;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #2563eb;
+        }
+
+        .event-db-label.standby {
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+
+        .event-binlog {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #2563eb;
+            margin-bottom: 8px;
+        }
+
+        .event-query {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #0f172a;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: nowrap;
+            border: 1px solid #e2e8f0;
+        }
+
+        .event-time {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .system-event {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 3px solid;
+            margin-bottom: 12px;
+        }
+
+        .system-event.success {
+            border-left-color: #16a34a;
+        }
+
+        .system-event.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .system-event.info {
+            border-left-color: #3b82f6;
+        }
+
+        .system-event.error {
+            border-left-color: #ef4444;
+        }
+
+        .event-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .system-event.success .event-icon {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .system-event.warning .event-icon {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .system-event.info .event-icon {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .event-content {
+            flex: 1;
+        }
+
+        .event-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .event-description {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .event-timestamp {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .event-type-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .event-type-badge.sync {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .event-type-badge.connection {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .event-type-badge.performance {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .event-type-badge.recovery {
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 20px;
+        }
+
+        .mini-chart-container {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .section-header {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .k8s-selector {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+            border: 1px solid #c4b5fd;
+        }
+
+        .k8s-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .k8s-info-2col {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 16px;
+        }
+
+        .k8s-item {
+            background: white;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #c4b5fd;
+        }
+
+        .k8s-label {
+            font-size: 11px;
+            color: #7c3aed;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .k8s-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .target-indicator {
+            display: inline-block;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            border-radius: 6px;
+            font-weight: 600;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div>
+        <h1>RAVO Dashboard</h1>
+        <div class="header-subtitle">Real-time synchronization and failover monitoring</div>
+    </div>
+    <div class="connection-status">
+        <span class="status-dot"></span>
+        <span id="connection-status">Connected</span>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Active DB Card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="db-icon">🗄️</div>
+                <div>
+                    <div>Active DB</div>
+                    <div class="db-role">PRIMARY</div>
+                </div>
+            </div>
+            <div class="status-badge active" id="active-status">
+                Active
+            </div>
+        </div>
+
+        <!-- Status, Uptime, Connections 카드 -->
+        <div class="row g-2 p-3">
+            <div class="col-4">
+                <div class="metric-card" id="active-status-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">Status</h6>
+                        <p class="metric-card-value" id="active-status-text">Active</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">Uptime</h6>
+                        <p class="metric-card-value" id="active-uptime">0d 0h 0m 0s</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">Connections</h6>
+                        <p class="metric-card-value" id="active-connections">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="metric-item">
+            <div class="metric-label">QPS</div>
+            <div class="metric-value" id="active-qps">0</div>
+        </div>
+
+        <!-- Mini Charts -->
+        <div class="row mt-3 g-2">
+            <div class="col-8">
+                <div class="row g-2 h-100">
+                    <div class="col-12" style="height: calc(50% - 4px);">
+                        <div class="metric-item h-100">
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">💻 CPU (cores/sec)</div>
+                            <div class="mini-chart-container" style="height: 60px; flex: 1;">
+                                <canvas id="active-cpu-mini-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12" style="height: calc(50% - 4px);">
+                        <div class="metric-item h-100">
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">🌐 Network (bytes/sec)</div>
+                            <div class="mini-chart-container" style="height: 60px; flex: 1;">
+                                <canvas id="active-network-mini-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-item h-100">
+                    <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">🧠 Heap Memory</div>
+                    <div class="mini-chart-container" style="flex: 1;">
+                        <canvas id="active-memory-mini-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="heartbeat">
+            <span>Last Heartbeat</span>
+            <span id="active-heartbeat">-</span>
+        </div>
+    </div>
+
+    <!-- Standby DB Card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="db-icon">🗄️</div>
+                <div>
+                    <div>Standby DB</div>
+                    <div class="db-role">REPLICA</div>
+                </div>
+            </div>
+            <div class="status-badge standby" id="standby-status">
+                Standby
+            </div>
+        </div>
+
+        <!-- Status, Uptime, Connections 카드 -->
+        <div class="row g-2 p-3">
+            <div class="col-4">
+                <div class="metric-card" id="standby-status-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">Status</h6>
+                        <p class="metric-card-value" id="standby-status-text">Standby</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">Uptime</h6>
+                        <p class="metric-card-value" id="standby-uptime">0d 0h 0m 0s</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">Connections</h6>
+                        <p class="metric-card-value" id="standby-connections">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="metric-item">
+            <div class="metric-label">QPS</div>
+            <div class="metric-value" id="standby-qps">0</div>
+        </div>
+
+        <!-- Mini Charts -->
+        <div class="row mt-3 g-2">
+            <div class="col-8">
+                <div class="row g-2 h-100">
+                    <div class="col-12" style="height: calc(50% - 4px);">
+                        <div class="metric-item h-100">
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">💻 CPU (cores/sec)</div>
+                            <div class="mini-chart-container" style="height: 60px; flex: 1;">
+                                <canvas id="standby-cpu-mini-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12" style="height: calc(50% - 4px);">
+                        <div class="metric-item h-100">
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">🌐 Network (bytes/sec)</div>
+                            <div class="mini-chart-container" style="height: 60px; flex: 1;">
+                                <canvas id="standby-network-mini-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-item h-100">
+                    <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">🧠 Heap Memory</div>
+                    <div class="mini-chart-container" style="flex: 1;">
+                        <canvas id="standby-memory-mini-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="heartbeat">
+            <span>Last Heartbeat</span>
+            <span id="standby-heartbeat">-</span>
+        </div>
+    </div>
+
+    <!-- Kubernetes Selector Card -->
+    <div class="card k8s-selector">
+        <div class="card-header">
+            <div class="card-title">
+                <div>☸️ Service Selector Status</div>
+            </div>
+        </div>
+
+        <div class="k8s-info-2col">
+            <div class="k8s-item">
+                <div class="k8s-label">Current Target</div>
+                <div class="k8s-value">
+                    <span class="target-indicator" id="k8s-target">active</span>
+                </div>
+            </div>
+            <div class="k8s-item">
+                <div class="k8s-label">Last Switched</div>
+                <div class="k8s-value" id="k8s-switched">오전 1:20:00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Synchronization Metrics Card -->
+    <div class="card sync-section">
+        <div class="card-header">
+            <div class="card-title">Synchronization Metrics</div>
+        </div>
+
+        <div class="sync-rate-display">
+            <div class="section-header">Sync Rate</div>
+            <div class="sync-percentage" id="sync-rate">99.80%</div>
+            <div class="sync-bar">
+                <div class="sync-bar-fill" id="sync-bar-fill" style="width: 99.8%"></div>
+            </div>
+        </div>
+
+        <div class="sync-details">
+            <div class="metric-item">
+                <div class="metric-label">Active Data Transferred</div>
+                <div class="metric-value" id="active-data-transferred">2.40 GB</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Standby Data Transferred</div>
+                <div class="metric-value" id="standby-data-transferred">2.40 GB</div>
+            </div>
+        </div>
+
+        <div class="sync-details">
+            <div class="binlog-position">
+                <div class="binlog-label">Active DB GTID</div>
+                <div class="binlog-value" id="active-gtid">mysql-bin.000123:45678901</div>
+            </div>
+            <div class="binlog-position">
+                <div class="binlog-label">Standby DB GTID</div>
+                <div class="binlog-value" id="standby-gtid">mysql-bin.000123:45678899</div>
+            </div>
+        </div>
+
+        <div class="heartbeat">
+            <span>Last Sync</span>
+            <span id="last-sync-time">오전 1:22:11</span>
+        </div>
+    </div>
+
+    <!-- Read Activity Card -->
+    <div class="card sync-section">
+        <div class="card-header">
+            <div class="card-title">Read Activity (SELECT)</div>
+            <div class="section-header">Reads per 3 seconds</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="read-chart"></canvas>
+        </div>
+    </div>
+
+    <!-- Replication Activity Card -->
+    <div class="card sync-section">
+        <div class="card-header">
+            <div class="card-title">Write Activity (INSERT + UPDATE + DELETE)</div>
+            <div class="section-header">Writes per 3 seconds</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="replication-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Binlog Events -->
+<div class="dashboard-grid events-grid">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Binlog Events</div>
+            <div class="section-header">Real-time</div>
+        </div>
+        <div id="binlog-events">
+            <div class="event-item update">
+                <div class="event-header">
+                    <span class="event-badge update">UPDATE</span>
+                    <span class="event-db-label active">active</span>
+                </div>
+                <div class="event-binlog">mysql-bin.000123:45678850</div>
+                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>
+                <div class="event-time">오전 1:22:06</div>
+            </div>
+
+            <div class="event-item update">
+                <div class="event-header">
+                    <span class="event-badge update">UPDATE</span>
+                    <span class="event-db-label standby">standby</span>
+                </div>
+                <div class="event-binlog">mysql-bin.000123:45678850</div>
+                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>
+                <div class="event-time">오전 1:22:06</div>
+            </div>
+
+            <div class="event-item delete">
+                <div class="event-header">
+                    <span class="event-badge delete">DELETE</span>
+                    <span class="event-db-label active">active</span>
+                </div>
+                <div class="event-binlog">mysql-bin.000123:45678800</div>
+                <div class="event-query">DELETE FROM sessions WHERE expired_at < NOW()</div>
+                <div class="event-time">오전 1:22:01</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Events -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">System Events</div>
+            <div class="section-header">Last 24 hours</div>
+        </div>
+        <div id="system-events">
+            <div class="system-event success">
+                <div class="event-icon">✓</div>
+                <div class="event-content">
+                    <div class="event-title">Synchronization completed successfully</div>
+                    <div class="event-description">Binlog position: mysql-bin.000123:45678901</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:22:09</div>
+                </div>
+                <span class="event-type-badge sync">sync</span>
+            </div>
+
+            <div class="system-event info">
+                <div class="event-icon">ℹ</div>
+                <div class="event-content">
+                    <div class="event-title">Heartbeat received from Standby DB</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:41</div>
+                </div>
+                <span class="event-type-badge connection">connection</span>
+            </div>
+
+            <div class="system-event warning">
+                <div class="event-icon">⚠</div>
+                <div class="event-content">
+                    <div class="event-title">Replication lag increased to 2.5 seconds</div>
+                    <div class="event-description">Lag returned to normal after 15 seconds</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:11</div>
+                </div>
+                <span class="event-type-badge performance">performance</span>
+            </div>
+
+            <div class="system-event success">
+                <div class="event-icon">✓</div>
+                <div class="event-content">
+                    <div class="event-title">Active DB recovered and re-synchronized</div>
+                    <div class="event-description">Transferred 1.2 GB of data from Standby DB</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:20:11</div>
+                </div>
+                <span class="event-type-badge recovery">recovery</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const initialData = /*[[${initialData}]]*/ {};
+    let replicationChart = null;
+    let readChart = null;
+    let miniCharts = {};
+    let lastMetricsData = {
+        active: { timestamp: 0, metrics: {} },
+        standby: { timestamp: 0, metrics: {} }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('=== Dashboard Initialized ===');
+        console.log('Initial data:', initialData);
+        
+        if (initialData) {
+            updateDashboard(initialData);
+        }
+        initMiniCharts();
+        initReadChart();
+        initReplicationChart();
+        
+        // 즉시 한 번 실행
+        fetchAndUpdate();
+        
+        // 3초마다 반복 - Dashboard 데이터
+        setInterval(() => {
+            console.log('=== Fetching dashboard data at', new Date().toLocaleTimeString(), '===');
+            fetchAndUpdate();
+        }, 3000);
+        
+        // 3초마다 반복 - 메트릭 데이터 (상세 정보용)
+        setInterval(() => {
+            console.log('=== Fetching metrics data at', new Date().toLocaleTimeString(), '===');
+            fetchMetricsData();
+        }, 3000);
+    });
+
+    async function fetchAndUpdate() {
+        try {
+            console.log('Fetching from /api/dashboard');
+            const response = await fetch('/api/dashboard');
+            console.log('Response status:', response.status, response.ok);
+            
+            if (!response.ok) {
+                console.error('Response not OK:', response.status);
+                return;
+            }
+            
+            const data = await response.json();
+            console.log('Received data:', data);
+            updateDashboard(data);
+            console.log('Dashboard updated successfully');
+        } catch (error) {
+            console.error('Failed to fetch dashboard data:', error);
+        }
+    }
+
+    async function fetchMetricsData() {
+        try {
+            console.log('Fetching from /api/metrics');
+            const response = await fetch('/api/metrics');
+            
+            if (!response.ok) {
+                console.error('Metrics response not OK:', response.status);
+                return;
+            }
+            
+            const metricsData = await response.json();
+            console.log('Received metrics data:', metricsData);
+            
+            // Active DB 상세 정보 업데이트
+            if (metricsData.active) {
+                updateDatabaseDetails('active', metricsData.active);
+                updateMiniCharts('active', metricsData.active);
+            }
+            
+            // Standby DB 상세 정보 업데이트
+            if (metricsData.standby) {
+                updateDatabaseDetails('standby', metricsData.standby);
+                updateMiniCharts('standby', metricsData.standby);
+            }
+            
+            console.log('Metrics updated successfully');
+        } catch (error) {
+            console.error('Failed to fetch metrics data:', error);
+        }
+    }
+
+    function initMiniCharts() {
+        const CHART_DATA_POINTS = 30;
+        const commonLineOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+                legend: { display: true, position: 'top', labels: { font: { size: 9 }, usePointStyle: true, padding: 5 } },
+                tooltip: { enabled: true }
+            },
+            scales: {
+                x: { display: false },
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#94a3b8', font: { size: 9 }, precision: 0 },
+                    grid: { color: 'rgba(226, 232, 240, 0.3)', drawBorder: false }
+                }
+            }
+        };
+
+        const commonDoughnutOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+                legend: { display: true, position: 'bottom', labels: { font: { size: 8 }, padding: 3 } }
+            }
+        };
+
+        ['active', 'standby'].forEach(type => {
+            // CPU Chart
+            const cpuCtx = document.getElementById(`${type}-cpu-mini-chart`).getContext('2d');
+            miniCharts[`${type}-cpu`] = new Chart(cpuCtx, {
+                type: 'line',
+                data: {
+                    labels: Array(CHART_DATA_POINTS).fill(''),
+                    datasets: [{
+                        label: 'cores/sec',
+                        data: Array(CHART_DATA_POINTS).fill(0),
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    ...commonLineOptions,
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { size: 9 }, 
+                                precision: 3,
+                                callback: function(value) {
+                                    return value.toFixed(3);
+                                }
+                            },
+                            grid: { color: 'rgba(226, 232, 240, 0.3)', drawBorder: false },
+                            afterDataLimits: (scale) => {
+                                // 데이터의 최대값 찾기
+                                const maxValue = Math.max(...scale.chart.data.datasets[0].data);
+                                
+                                if (maxValue > 0 && maxValue < 0.1) {
+                                    // 값이 0.1보다 작으면 Y축 최대값을 동적 조정
+                                    scale.max = Math.max(0.1, maxValue * 1.5);
+                                } else if (maxValue >= 0.1 && maxValue < 1) {
+                                    // 0.1~1 사이면 여유있게 설정
+                                    scale.max = Math.ceil(maxValue * 1.3 * 10) / 10;
+                                }
+                                // 1 이상이면 자동 스케일링 사용
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Network Chart
+            const networkCtx = document.getElementById(`${type}-network-mini-chart`).getContext('2d');
+            miniCharts[`${type}-network`] = new Chart(networkCtx, {
+                type: 'line',
+                data: {
+                    labels: Array(CHART_DATA_POINTS).fill(''),
+                    datasets: [
+                        {
+                            label: 'Sent',
+                            data: Array(CHART_DATA_POINTS).fill(0),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Received',
+                            data: Array(CHART_DATA_POINTS).fill(0),
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: commonLineOptions
+            });
+
+            // Memory Chart (Doughnut)
+            const memoryCtx = document.getElementById(`${type}-memory-mini-chart`).getContext('2d');
+            miniCharts[`${type}-memory`] = new Chart(memoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['In Use', 'Free'],
+                    datasets: [{
+                        data: [0, 1],
+                        backgroundColor: ['#f59e0b', '#e5e7eb']
+                    }]
+                },
+                options: commonDoughnutOptions
+            });
+        });
+
+        console.log('Mini charts initialized');
+    }
+
+    function calculateRate(type, key, currentValue) {
+        const lastData = lastMetricsData[type];
+        if (!lastData || !lastData.metrics || !lastData.timestamp) {
+            console.log(`[${type}] No previous data for ${key}, initializing...`);
+            return 0;
+        }
+        
+        const lastValue = lastData.metrics[key] || 0;
+        const timeDelta = (Date.now() - lastData.timestamp) / 1000;
+        
+        console.log(`[${type}] ${key} - Current: ${currentValue}, Last: ${lastValue}, TimeDelta: ${timeDelta}s`);
+
+        if (timeDelta <= 0) {
+            console.warn(`[${type}] Invalid time delta: ${timeDelta}`);
+            return 0;
+        }
+        
+        if (currentValue >= lastValue) {
+            const rate = (currentValue - lastValue) / timeDelta;
+            console.log(`[${type}] ${key} rate: ${rate}`);
+            return rate;
+        }
+        
+        console.warn(`[${type}] Current value (${currentValue}) < Last value (${lastValue}), returning 0`);
+        return 0;
+    }
+
+    function updateTimeSeriesChart(chart, newValues) {
+        chart.data.labels.push('');
+        chart.data.labels.shift();
+        chart.data.datasets.forEach((dataset, i) => {
+            dataset.data.push(newValues[i] ?? 0);
+            dataset.data.shift();
+        });
+        chart.update('none');
+    }
+
+    function updateMiniCharts(type, metricData) {
+        const metrics = metricData.metrics || {};
+        
+        console.log(`[${type}] CPU metric:`, metrics.process_cpu_seconds_total);
+        console.log(`[${type}] Bytes sent:`, metrics.mysql_global_status_bytes_sent);
+        console.log(`[${type}] Bytes received:`, metrics.mysql_global_status_bytes_received);
+        console.log(`[${type}] Heap in use:`, metrics.go_memstats_heap_inuse_bytes);
+        console.log(`[${type}] Heap sys:`, metrics.go_memstats_heap_sys_bytes);
+        
+        // CPU 업데이트
+        const cpuRate = calculateRate(type, 'process_cpu_seconds_total', metrics.process_cpu_seconds_total || 0);
+        console.log(`[${type}] Calculated CPU rate:`, cpuRate);
+        updateTimeSeriesChart(miniCharts[`${type}-cpu`], [cpuRate]);
+
+        // Network 업데이트
+        const bytesSent = calculateRate(type, 'mysql_global_status_bytes_sent', metrics.mysql_global_status_bytes_sent || 0);
+        const bytesReceived = calculateRate(type, 'mysql_global_status_bytes_received', metrics.mysql_global_status_bytes_received || 0);
+        console.log(`[${type}] Network rates - Sent:`, bytesSent, 'Received:', bytesReceived);
+        updateTimeSeriesChart(miniCharts[`${type}-network`], [bytesSent, bytesReceived]);
+
+        // Memory 업데이트
+        const heapInUse = metrics.go_memstats_heap_inuse_bytes || 0;
+        const heapSys = metrics.go_memstats_heap_sys_bytes || 0;
+        const heapFree = Math.max(0, heapSys - heapInUse);
+        console.log(`[${type}] Memory - InUse:`, heapInUse, 'Free:', heapFree);
+        miniCharts[`${type}-memory`].data.datasets[0].data = [heapInUse, heapFree];
+        miniCharts[`${type}-memory`].update('none');
+
+        // 마지막 메트릭 데이터 저장
+        lastMetricsData[type] = { timestamp: Date.now(), metrics: metrics };
+    }
+
+    function updateDatabaseDetails(type, metricData) {
+        const metrics = metricData.metrics || {};
+        const info = metricData.info || {};
+        
+        console.log(`Updating ${type} details:`, metricData);
+        
+        // QPS 계산 (실시간) - 소수점 유지
+        const uptime = metrics.mysql_global_status_uptime || 1;
+        const queries = metrics.mysql_global_status_queries || 0;
+        const qps = queries / uptime;
+        
+        const qpsEl = document.getElementById(type + '-qps');
+        if (qpsEl) {
+            if (qps >= 1000) {
+                // 1000 이상이면 쉼표 추가
+                qpsEl.textContent = qps.toLocaleString('en-US', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                });
+            } else if (qps >= 10) {
+                // 10 이상이면 소수점 1자리
+                qpsEl.textContent = qps.toFixed(1);
+            } else {
+                // 10 미만이면 소수점 2자리
+                qpsEl.textContent = qps.toFixed(2);
+            }
+        }
+        
+        // Connections (더 정확한 값)
+        const connections = metrics.mysql_global_status_threads_connected || 0;
+        const connectionsEl = document.getElementById(type + '-connections');
+        if (connectionsEl) {
+            connectionsEl.textContent = Math.round(connections);
+        }
+    }
+
+    function updateDashboard(data) {
+        console.log('=== updateDashboard called ===');
+        console.log('Full dashboard data:', JSON.stringify(data, null, 2));
+        
+        // Connection status 업데이트 확인
+        const connectionStatus = data.isConnected ? 'Connected' : 'Disconnected';
+        console.log('Setting connection status to:', connectionStatus);
+        document.getElementById('connection-status').textContent = connectionStatus;
+
+        if (data.activeDb) {
+            console.log('Updating active DB:', data.activeDb);
+            updateDatabaseCard('active', data.activeDb);
+        }
+
+        if (data.standbyDb) {
+            console.log('Updating standby DB:', data.standbyDb);
+            updateDatabaseCard('standby', data.standbyDb);
+        }
+
+        if (data.selectorStatus) {
+            console.log('Updating service selector status:', data.selectorStatus);
+            const targetEl = document.getElementById('k8s-target');
+            const switchedEl = document.getElementById('k8s-switched');
+            
+            if (targetEl) {
+                targetEl.textContent = data.selectorStatus.currentTarget || 'unknown';
+            }
+            if (switchedEl) {
+                // lastSwitchedFormatted 필드 사용
+                switchedEl.textContent = data.selectorStatus.lastSwitchedFormatted || '-';
+            }
+        }
+
+        if (data.syncMetrics) {
+            console.log('Updating sync metrics:', data.syncMetrics);
+            const syncRate = data.syncMetrics.syncRate || 0;
+            document.getElementById('sync-rate').textContent = syncRate.toFixed(2) + '%';
+            document.getElementById('sync-bar-fill').style.width = syncRate + '%';
+            document.getElementById('standby-data-transferred').textContent = data.syncMetrics.activeDataTransferred || '-';
+            document.getElementById('active-data-transferred').textContent = data.syncMetrics.standbyDataTransferred || '-';
+            document.getElementById('active-gtid').textContent = data.syncMetrics.activeGtid || '-';
+            document.getElementById('standby-gtid').textContent = data.syncMetrics.standbyGtid || '-';
+            document.getElementById('last-sync-time').textContent = data.syncMetrics.lastSyncTime || '-';
+        }
+
+        console.log('Checking writeActivity:', data.writeActivity ? 'EXISTS' : 'MISSING');
+        if (data.writeActivity) {
+            console.log('Calling updateWriteActivity with:', data.writeActivity);
+            updateWriteActivity(data.writeActivity);
+        } else {
+            console.error('data.writeActivity is missing!');
+        }
+
+        console.log('Checking readActivity:', data.readActivity ? 'EXISTS' : 'MISSING');
+        if (data.readActivity) {
+            console.log('Calling updateReadActivity with:', data.readActivity);
+            updateReadActivity(data.readActivity);
+        } else {
+            console.error('data.readActivity is missing!');
+        }
+        
+        console.log('Dashboard update complete');
+    }
+
+    function updateDatabaseCard(type, dbData) {
+        console.log(`Updating ${type} database card:`, dbData);
+        
+        // Uptime
+        const uptimeEl = document.getElementById(type + '-uptime');
+        if (uptimeEl) uptimeEl.textContent = dbData.uptime || '0d 0h 0m 0s';
+        
+        // Connections
+        const connectionsEl = document.getElementById(type + '-connections');
+        if (connectionsEl) connectionsEl.textContent = dbData.connections || '0';
+        
+        // QPS - 숫자 포맷팅 추가 (소수점 2자리)
+        const qpsEl = document.getElementById(type + '-qps');
+        if (qpsEl) {
+            const qpsValue = dbData.qps || 0;
+            if (qpsValue >= 1000) {
+                // 1000 이상이면 쉼표 추가
+                qpsEl.textContent = qpsValue.toLocaleString('en-US', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                });
+            } else if (qpsValue >= 10) {
+                // 10 이상이면 소수점 1자리
+                qpsEl.textContent = qpsValue.toFixed(1);
+            } else {
+                // 10 미만이면 소수점 2자리
+                qpsEl.textContent = qpsValue.toFixed(2);
+            }
+        }
+        
+        // Last Heartbeat
+        const heartbeatEl = document.getElementById(type + '-heartbeat');
+        if (heartbeatEl) heartbeatEl.textContent = dbData.lastHeartbeat || '-';
+
+        // Status Badge (상단)
+        const statusBadge = document.getElementById(type + '-status');
+        if (statusBadge) {
+            statusBadge.textContent = dbData.status;
+            statusBadge.className = 'status-badge';
+
+            if (dbData.status === 'Active') {
+                statusBadge.classList.add('active');
+            } else if (dbData.status === 'Standby') {
+                statusBadge.classList.add('standby');
+            } else {
+                statusBadge.classList.add('down');
+            }
+        }
+
+        // Status Card (메트릭 카드) 배경색 변경
+        const statusCard = document.getElementById(type + '-status-card');
+        const statusText = document.getElementById(type + '-status-text');
+        
+        if (statusCard && statusText) {
+            // UP/DOWN 표시
+            const isHealthy = dbData.isHealthy !== false && dbData.status !== 'Down';
+            statusText.textContent = isHealthy ? '● UP' : '● DOWN';
+            statusCard.className = 'metric-card';
+            
+            if (isHealthy) {
+                statusCard.classList.add('status-up');
+            } else {
+                statusCard.classList.add('status-down');
+            }
+        }
+    }
+
+    function updateReadActivity(activityData) {
+        console.log('Updating read activity:', activityData);
+        
+        if (!activityData || !activityData.activeDbReads || !activityData.standbyDbReads) {
+            console.warn('Invalid read activity data, skipping update');
+            return;
+        }
+
+        if (!Array.isArray(activityData.activeDbReads) || activityData.activeDbReads.length === 0) {
+            console.warn('Active DB reads is empty or not an array');
+            return;
+        }
+
+        if (!Array.isArray(activityData.standbyDbReads) || activityData.standbyDbReads.length === 0) {
+            console.warn('Standby DB reads is empty or not an array');
+            return;
+        }
+
+        try {
+            // 고정된 X축 레이블 생성 (빈 문자열, 30개 고정)
+            const dataLength = activityData.activeDbReads.length;
+            const labels = new Array(dataLength).fill('');
+            
+            const activeData = activityData.activeDbReads.map(d => d.count || 0);
+            const standbyData = activityData.standbyDbReads.map(d => d.count || 0);
+
+            console.log('Read chart data points:', {
+                labels: labels.length,
+                activeData: activeData.length,
+                standbyData: standbyData.length,
+                sampleActive: activeData.slice(-5),
+                sampleStandby: standbyData.slice(-5)
+            });
+
+            if (readChart && readChart.data) {
+                readChart.data.labels = labels;
+                readChart.data.datasets[0].data = activeData;
+                readChart.data.datasets[1].data = standbyData;
+                readChart.update('none');
+                console.log('Read chart updated successfully');
+            } else {
+                console.error('readChart is null or invalid');
+            }
+        } catch (error) {
+            console.error('Error updating read activity chart:', error);
+        }
+    }
+
+    function updateWriteActivity(activityData) {
+        console.log('=== updateWriteActivity called ===');
+        console.log('Full activityData:', JSON.stringify(activityData, null, 2));
+        
+        if (!activityData) {
+            console.error('activityData is null or undefined');
+            return;
+        }
+        
+        console.log('activityData.activeDbWrites:', activityData.activeDbWrites);
+        console.log('activityData.standbyDbWrites:', activityData.standbyDbWrites);
+        
+        if (!activityData.activeDbWrites || !activityData.standbyDbWrites) {
+            console.warn('Invalid activity data - missing activeDbWrites or standbyDbWrites');
+            console.warn('Available keys:', Object.keys(activityData));
+            return;
+        }
+
+        if (!Array.isArray(activityData.activeDbWrites) || activityData.activeDbWrites.length === 0) {
+            console.warn('Active DB writes is empty or not an array, length:', activityData.activeDbWrites?.length);
+            return;
+        }
+
+        if (!Array.isArray(activityData.standbyDbWrites) || activityData.standbyDbWrites.length === 0) {
+            console.warn('Standby DB writes is empty or not an array, length:', activityData.standbyDbWrites?.length);
+            return;
+        }
+
+        try {
+            // 고정된 X축 레이블 생성 (빈 문자열, 30개 고정)
+            const dataLength = activityData.activeDbWrites.length;
+            const labels = new Array(dataLength).fill('');
+            
+            const activeData = activityData.activeDbWrites.map(d => d.count || 0);
+            const standbyData = activityData.standbyDbWrites.map(d => d.count || 0);
+
+            console.log('Write chart data points:', {
+                labels: labels.length,
+                activeData: activeData.length,
+                standbyData: standbyData.length,
+                sampleActive: activeData.slice(-5),
+                sampleStandby: standbyData.slice(-5),
+                allActiveData: activeData,
+                allStandbyData: standbyData
+            });
+
+            if (replicationChart && replicationChart.data) {
+                replicationChart.data.labels = labels;
+                replicationChart.data.datasets[0].data = activeData;
+                replicationChart.data.datasets[1].data = standbyData;
+                replicationChart.update('none');
+                console.log('Write chart updated successfully');
+            } else {
+                console.error('replicationChart is null or invalid');
+            }
+        } catch (error) {
+            console.error('Error updating write activity chart:', error);
+        }
+    }
+
+    function initReadChart() {
+        const ctx = document.getElementById('read-chart').getContext('2d');
+
+        readChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Active DB',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    },
+                    {
+                        label: 'Standby DB',
+                        data: [],
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#64748b',
+                            usePointStyle: true,
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return 'Data Point: ' + (context[0].dataIndex + 1);
+                            },
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += context.parsed.y + ' reads';
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false  // X축 완전히 숨김
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: false
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#94a3b8',
+                            precision: 0,
+                            font: {
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.3)',
+                            drawBorder: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('Read chart initialized');
+    }
+
+    function initReplicationChart() {
+        const ctx = document.getElementById('replication-chart').getContext('2d');
+
+        replicationChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Active DB',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    },
+                    {
+                        label: 'Standby DB',
+                        data: [],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#64748b',
+                            usePointStyle: true,
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return 'Data Point: ' + (context[0].dataIndex + 1);
+                            },
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += context.parsed.y + ' writes';
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false  // X축 완전히 숨김
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: false
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#94a3b8',
+                            precision: 0,
+                            font: {
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.3)',
+                            drawBorder: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('Replication chart initialized');
+    }
+
+    function updateMockData() {
+        // Mock data는 더 이상 사용하지 않음
+        console.log('Mock data update skipped - using real data');
+    }
+    /*]]>*/
+</script>
+</body>
+</html>
