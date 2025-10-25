@@ -2,7 +2,6 @@ package org.ravo.ravomanager.manager.service;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ravo.ravomanager.manager.domain.SyncStatus;
 import org.ravo.ravomanager.manager.dto.SynchronizationMetricsDto;
@@ -16,16 +15,18 @@ import java.time.format.DateTimeFormatter;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SynchronizationMetricsService {
 
     private final TableHashService tableHashService;
-
-    @Qualifier("standbyJdbcTemplate")
     private final JdbcTemplate standbyJdbcTemplate;
-
-    @Qualifier("batchJdbcTemplate")
     private final JdbcTemplate batchJdbcTemplate;
+
+    public SynchronizationMetricsService(TableHashService tableHashService, @Qualifier("standbyJdbcTemplate")JdbcTemplate standbyJdbcTemplate,
+                                         @Qualifier("batchJdbcTemplate") JdbcTemplate batchJdbcTemplate) {
+        this.tableHashService = tableHashService;
+        this.standbyJdbcTemplate = standbyJdbcTemplate;
+        this.batchJdbcTemplate = batchJdbcTemplate;
+    }
 
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
