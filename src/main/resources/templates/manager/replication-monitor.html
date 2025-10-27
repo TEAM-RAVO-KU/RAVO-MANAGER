@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Replication Monitor</title>
+    <title>RAVO Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <style>
@@ -594,44 +594,42 @@
 <div class="header">
     <div>
         <h1>RAVO Dashboard</h1>
-        <div class="header-subtitle">Real-time synchronization and failover monitoring</div>
+        <div class="header-subtitle">실시간 동기화 및 장애 조치 모니터링</div>
     </div>
     <div class="connection-status">
         <span class="status-dot"></span>
-        <span id="connection-status">Connected</span>
+        <span id="connection-status">연결됨</span>
     </div>
 </div>
 
 <div class="dashboard-grid">
-    <!-- Active DB Card -->
     <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <div class="db-icon">🗄️</div>
                 <div>
                     <div>Active DB</div>
-                    <div class="db-role">PRIMARY</div>
+                    <div class="db-role">원본</div>
                 </div>
             </div>
             <div class="status-badge active" id="active-status">
-                Active
+                활성
             </div>
         </div>
 
-        <!-- Status, Uptime, Connections 카드 -->
         <div class="row g-2 p-3">
             <div class="col-4">
                 <div class="metric-card" id="active-status-card">
                     <div class="metric-card-body text-center">
-                        <h6 class="metric-card-title">Status</h6>
-                        <p class="metric-card-value" id="active-status-text">Active</p>
+                        <h6 class="metric-card-title">상태</h6>
+                        <p class="metric-card-value" id="active-status-text">활성</p>
                     </div>
                 </div>
             </div>
             <div class="col-4">
                 <div class="metric-card">
                     <div class="metric-card-body text-center">
-                        <h6 class="metric-card-title">Uptime</h6>
+                        <h6 class="metric-card-title">가동 시간</h6>
                         <p class="metric-card-value" id="active-uptime">0d 0h 0m 0s</p>
                     </div>
                 </div>
@@ -639,7 +637,7 @@
             <div class="col-4">
                 <div class="metric-card">
                     <div class="metric-card-body text-center">
-                        <h6 class="metric-card-title">Connections</h6>
+                        <h6 class="metric-card-title">연결 수</h6>
                         <p class="metric-card-value" id="active-connections">0</p>
                     </div>
                 </div>
@@ -651,13 +649,12 @@
             <div class="metric-value" id="active-qps">0</div>
         </div>
 
-        <!-- Mini Charts -->
         <div class="row mt-3 g-2">
             <div class="col-8">
                 <div class="row g-2 h-100">
                     <div class="col-12" style="height: calc(50% - 4px);">
                         <div class="metric-item h-100">
-                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">💻 CPU (cores/sec)</div>
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">CPU (cores/sec)</div>
                             <div class="mini-chart-container" style="height: 60px; flex: 1;">
                                 <canvas id="active-cpu-mini-chart"></canvas>
                             </div>
@@ -665,7 +662,7 @@
                     </div>
                     <div class="col-12" style="height: calc(50% - 4px);">
                         <div class="metric-item h-100">
-                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">🌐 Network (bytes/sec)</div>
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">네트워크 (bytes/sec)</div>
                             <div class="mini-chart-container" style="height: 60px; flex: 1;">
                                 <canvas id="active-network-mini-chart"></canvas>
                             </div>
@@ -675,7 +672,7 @@
             </div>
             <div class="col-4">
                 <div class="metric-item h-100">
-                    <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">🧠 Heap Memory</div>
+                    <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">힙 메모리</div>
                     <div class="mini-chart-container" style="flex: 1;">
                         <canvas id="active-memory-mini-chart"></canvas>
                     </div>
@@ -684,40 +681,38 @@
         </div>
 
         <div class="heartbeat">
-            <span>Last Heartbeat</span>
+            <span>마지막 하트비트</span>
             <span id="active-heartbeat">-</span>
         </div>
     </div>
 
-    <!-- Standby DB Card -->
     <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <div class="db-icon">🗄️</div>
                 <div>
                     <div>Standby DB</div>
-                    <div class="db-role">REPLICA</div>
+                    <div class="db-role">복제본</div>
                 </div>
             </div>
             <div class="status-badge standby" id="standby-status">
-                Standby
+                대기
             </div>
         </div>
 
-        <!-- Status, Uptime, Connections 카드 -->
         <div class="row g-2 p-3">
             <div class="col-4">
                 <div class="metric-card" id="standby-status-card">
                     <div class="metric-card-body text-center">
-                        <h6 class="metric-card-title">Status</h6>
-                        <p class="metric-card-value" id="standby-status-text">Standby</p>
+                        <h6 class="metric-card-title">상태</h6>
+                        <p class="metric-card-value" id="standby-status-text">대기</p>
                     </div>
                 </div>
             </div>
             <div class="col-4">
                 <div class="metric-card">
                     <div class="metric-card-body text-center">
-                        <h6 class="metric-card-title">Uptime</h6>
+                        <h6 class="metric-card-title">가동 시간</h6>
                         <p class="metric-card-value" id="standby-uptime">0d 0h 0m 0s</p>
                     </div>
                 </div>
@@ -725,7 +720,7 @@
             <div class="col-4">
                 <div class="metric-card">
                     <div class="metric-card-body text-center">
-                        <h6 class="metric-card-title">Connections</h6>
+                        <h6 class="metric-card-title">연결 수</h6>
                         <p class="metric-card-value" id="standby-connections">0</p>
                     </div>
                 </div>
@@ -737,13 +732,12 @@
             <div class="metric-value" id="standby-qps">0</div>
         </div>
 
-        <!-- Mini Charts -->
         <div class="row mt-3 g-2">
             <div class="col-8">
                 <div class="row g-2 h-100">
                     <div class="col-12" style="height: calc(50% - 4px);">
                         <div class="metric-item h-100">
-                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">💻 CPU (cores/sec)</div>
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">CPU (cores/sec)</div>
                             <div class="mini-chart-container" style="height: 60px; flex: 1;">
                                 <canvas id="standby-cpu-mini-chart"></canvas>
                             </div>
@@ -751,7 +745,7 @@
                     </div>
                     <div class="col-12" style="height: calc(50% - 4px);">
                         <div class="metric-item h-100">
-                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">🌐 Network (bytes/sec)</div>
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">네트워크 (bytes/sec)</div>
                             <div class="mini-chart-container" style="height: 60px; flex: 1;">
                                 <canvas id="standby-network-mini-chart"></canvas>
                             </div>
@@ -761,7 +755,7 @@
             </div>
             <div class="col-4">
                 <div class="metric-item h-100">
-                    <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">🧠 Heap Memory</div>
+                    <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">힙 메모리</div>
                     <div class="mini-chart-container" style="flex: 1;">
                         <canvas id="standby-memory-mini-chart"></canvas>
                     </div>
@@ -770,41 +764,39 @@
         </div>
 
         <div class="heartbeat">
-            <span>Last Heartbeat</span>
+            <span>마지막 하트비트</span>
             <span id="standby-heartbeat">-</span>
         </div>
     </div>
 
-    <!-- Kubernetes Selector Card -->
     <div class="card k8s-selector">
         <div class="card-header">
             <div class="card-title">
-                <div>☸️ Service Selector Status</div>
+                <div>서비스 셀렉터 상태</div>
             </div>
         </div>
 
         <div class="k8s-info-2col">
             <div class="k8s-item">
-                <div class="k8s-label">Current Target</div>
+                <div class="k8s-label">현재 대상</div>
                 <div class="k8s-value">
                     <span class="target-indicator" id="k8s-target">active</span>
                 </div>
             </div>
             <div class="k8s-item">
-                <div class="k8s-label">Last Switched</div>
+                <div class="k8s-label">마지막 전환</div>
                 <div class="k8s-value" id="k8s-switched">오전 1:20:00</div>
             </div>
         </div>
     </div>
 
-    <!-- Synchronization Metrics Card -->
     <div class="card sync-section">
         <div class="card-header">
-            <div class="card-title">Synchronization Metrics</div>
+            <div class="card-title">동기화 지표</div>
         </div>
 
         <div class="sync-rate-display">
-            <div class="section-header">Sync Rate</div>
+            <div class="section-header">동기화율</div>
             <div class="sync-percentage" id="sync-rate">99.80%</div>
             <div class="sync-bar">
                 <div class="sync-bar-fill" id="sync-bar-fill" style="width: 99.8%"></div>
@@ -813,11 +805,11 @@
 
         <div class="sync-details">
             <div class="metric-item">
-                <div class="metric-label">Active Data Transferred</div>
+                <div class="metric-label">Active DB 전송량</div>
                 <div class="metric-value" id="active-data-transferred">2.40 GB</div>
             </div>
             <div class="metric-item">
-                <div class="metric-label">Standby Data Transferred</div>
+                <div class="metric-label">Standby DB 전송량</div>
                 <div class="metric-value" id="standby-data-transferred">2.40 GB</div>
             </div>
         </div>
@@ -834,27 +826,25 @@
         </div>
 
         <div class="heartbeat">
-            <span>Last Sync</span>
+            <span>마지막 동기화</span>
             <span id="last-sync-time">오전 1:22:11</span>
         </div>
     </div>
 
-    <!-- Read Activity Card -->
     <div class="card sync-section">
         <div class="card-header">
-            <div class="card-title">Read Activity (SELECT)</div>
-            <div class="section-header">Reads per 3 seconds</div>
+            <div class="card-title">읽기 활동 (SELECT)</div>
+            <div class="section-header">3초당 읽기 수</div>
         </div>
         <div class="chart-container">
             <canvas id="read-chart"></canvas>
         </div>
     </div>
 
-    <!-- Replication Activity Card -->
     <div class="card sync-section">
         <div class="card-header">
-            <div class="card-title">Write Activity (INSERT + UPDATE + DELETE)</div>
-            <div class="section-header">Writes per 3 seconds</div>
+            <div class="card-title">쓰기 활동 (INSERT + UPDATE + DELETE)</div>
+            <div class="section-header">3초당 쓰기 수</div>
         </div>
         <div class="chart-container">
             <canvas id="replication-chart"></canvas>
@@ -862,12 +852,11 @@
     </div>
 </div>
 
-<!-- Binlog Events -->
 <div class="dashboard-grid events-grid">
     <div class="card">
         <div class="card-header">
-            <div class="card-title">Binlog Events</div>
-            <div class="section-header">Real-time</div>
+            <div class="card-title">Binlog 이벤트</div>
+            <div class="section-header">실시간</div>
         </div>
         <div id="binlog-events">
             <div class="event-item update">
@@ -902,50 +891,49 @@
         </div>
     </div>
 
-    <!-- System Events -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">System Events</div>
-            <div class="section-header">Last 24 hours</div>
+            <div class="card-title">시스템 이벤트</div>
+            <div class="section-header">최근 24시간</div>
         </div>
         <div id="system-events">
             <div class="system-event success">
-                <div class="event-icon">✓</div>
+                <div class="event-icon"></div>
                 <div class="event-content">
-                    <div class="event-title">Synchronization completed successfully</div>
-                    <div class="event-description">Binlog position: mysql-bin.000123:45678901</div>
+                    <div class="event-title">동기화가 성공적으로 완료되었습니다</div>
+                    <div class="event-description">Binlog 위치: mysql-bin.000123:45678901</div>
                     <div class="event-timestamp">2025. 10. 18. 오전 1:22:09</div>
                 </div>
-                <span class="event-type-badge sync">sync</span>
+                <span class="event-type-badge sync">동기화</span>
             </div>
 
             <div class="system-event info">
-                <div class="event-icon">ℹ</div>
+                <div class="event-icon"></div>
                 <div class="event-content">
-                    <div class="event-title">Heartbeat received from Standby DB</div>
+                    <div class="event-title">Standby DB로부터 하트비트 수신</div>
                     <div class="event-timestamp">2025. 10. 18. 오전 1:21:41</div>
                 </div>
-                <span class="event-type-badge connection">connection</span>
+                <span class="event-type-badge connection">연결</span>
             </div>
 
             <div class="system-event warning">
-                <div class="event-icon">⚠</div>
+                <div class="event-icon"></div>
                 <div class="event-content">
-                    <div class="event-title">Replication lag increased to 2.5 seconds</div>
-                    <div class="event-description">Lag returned to normal after 15 seconds</div>
+                    <div class="event-title">복제 지연이 2.5초로 증가했습니다</div>
+                    <div class="event-description">15초 후 지연 시간이 정상으로 돌아왔습니다</div>
                     <div class="event-timestamp">2025. 10. 18. 오전 1:21:11</div>
                 </div>
-                <span class="event-type-badge performance">performance</span>
+                <span class="event-type-badge performance">성능</span>
             </div>
 
             <div class="system-event success">
-                <div class="event-icon">✓</div>
+                <div class="event-icon"></div>
                 <div class="event-content">
-                    <div class="event-title">Active DB recovered and re-synchronized</div>
-                    <div class="event-description">Transferred 1.2 GB of data from Standby DB</div>
+                    <div class="event-title">Active DB가 복구되고 다시 동기화되었습니다</div>
+                    <div class="event-description">Standby DB에서 1.2 GB 데이터 전송됨</div>
                     <div class="event-timestamp">2025. 10. 18. 오전 1:20:11</div>
                 </div>
-                <span class="event-type-badge recovery">recovery</span>
+                <span class="event-type-badge recovery">복구</span>
             </div>
         </div>
     </div>
@@ -965,23 +953,23 @@
     document.addEventListener('DOMContentLoaded', () => {
         console.log('=== Dashboard Initialized ===');
         console.log('Initial data:', initialData);
-        
+
         if (initialData) {
             updateDashboard(initialData);
         }
         initMiniCharts();
         initReadChart();
         initReplicationChart();
-        
+
         // 즉시 한 번 실행
         fetchAndUpdate();
-        
+
         // 3초마다 반복 - Dashboard 데이터
         setInterval(() => {
             console.log('=== Fetching dashboard data at', new Date().toLocaleTimeString(), '===');
             fetchAndUpdate();
         }, 3000);
-        
+
         // 3초마다 반복 - 메트릭 데이터 (상세 정보용)
         setInterval(() => {
             console.log('=== Fetching metrics data at', new Date().toLocaleTimeString(), '===');
@@ -994,12 +982,12 @@
             console.log('Fetching from /api/dashboard');
             const response = await fetch('/api/dashboard');
             console.log('Response status:', response.status, response.ok);
-            
+
             if (!response.ok) {
                 console.error('Response not OK:', response.status);
                 return;
             }
-            
+
             const data = await response.json();
             console.log('Received data:', data);
             updateDashboard(data);
@@ -1013,27 +1001,27 @@
         try {
             console.log('Fetching from /api/metrics');
             const response = await fetch('/api/metrics');
-            
+
             if (!response.ok) {
                 console.error('Metrics response not OK:', response.status);
                 return;
             }
-            
+
             const metricsData = await response.json();
             console.log('Received metrics data:', metricsData);
-            
+
             // Active DB 상세 정보 업데이트
             if (metricsData.active) {
                 updateDatabaseDetails('active', metricsData.active);
                 updateMiniCharts('active', metricsData.active);
             }
-            
+
             // Standby DB 상세 정보 업데이트
             if (metricsData.standby) {
                 updateDatabaseDetails('standby', metricsData.standby);
                 updateMiniCharts('standby', metricsData.standby);
             }
-            
+
             console.log('Metrics updated successfully');
         } catch (error) {
             console.error('Failed to fetch metrics data:', error);
@@ -1092,9 +1080,9 @@
                         x: { display: false },
                         y: {
                             beginAtZero: true,
-                            ticks: { 
-                                color: '#94a3b8', 
-                                font: { size: 9 }, 
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 9 },
                                 precision: 3,
                                 callback: function(value) {
                                     return value.toFixed(3);
@@ -1104,7 +1092,7 @@
                             afterDataLimits: (scale) => {
                                 // 데이터의 최대값 찾기
                                 const maxValue = Math.max(...scale.chart.data.datasets[0].data);
-                                
+
                                 if (maxValue > 0 && maxValue < 0.1) {
                                     // 값이 0.1보다 작으면 Y축 최대값을 동적 조정
                                     scale.max = Math.max(0.1, maxValue * 1.5);
@@ -1127,7 +1115,7 @@
                     labels: Array(CHART_DATA_POINTS).fill(''),
                     datasets: [
                         {
-                            label: 'Sent',
+                            label: '전송',
                             data: Array(CHART_DATA_POINTS).fill(0),
                             borderColor: '#ef4444',
                             backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -1136,7 +1124,7 @@
                             pointRadius: 0
                         },
                         {
-                            label: 'Received',
+                            label: '수신',
                             data: Array(CHART_DATA_POINTS).fill(0),
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -1154,7 +1142,7 @@
             miniCharts[`${type}-memory`] = new Chart(memoryCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['In Use', 'Free'],
+                    labels: ['사용 중', '여유'],
                     datasets: [{
                         data: [0, 1],
                         backgroundColor: ['#f59e0b', '#e5e7eb']
@@ -1173,23 +1161,23 @@
             console.log(`[${type}] No previous data for ${key}, initializing...`);
             return 0;
         }
-        
+
         const lastValue = lastData.metrics[key] || 0;
         const timeDelta = (Date.now() - lastData.timestamp) / 1000;
-        
+
         console.log(`[${type}] ${key} - Current: ${currentValue}, Last: ${lastValue}, TimeDelta: ${timeDelta}s`);
 
         if (timeDelta <= 0) {
             console.warn(`[${type}] Invalid time delta: ${timeDelta}`);
             return 0;
         }
-        
+
         if (currentValue >= lastValue) {
             const rate = (currentValue - lastValue) / timeDelta;
             console.log(`[${type}] ${key} rate: ${rate}`);
             return rate;
         }
-        
+
         console.warn(`[${type}] Current value (${currentValue}) < Last value (${lastValue}), returning 0`);
         return 0;
     }
@@ -1206,13 +1194,13 @@
 
     function updateMiniCharts(type, metricData) {
         const metrics = metricData.metrics || {};
-        
+
         console.log(`[${type}] CPU metric:`, metrics.process_cpu_seconds_total);
         console.log(`[${type}] Bytes sent:`, metrics.mysql_global_status_bytes_sent);
         console.log(`[${type}] Bytes received:`, metrics.mysql_global_status_bytes_received);
         console.log(`[${type}] Heap in use:`, metrics.go_memstats_heap_inuse_bytes);
         console.log(`[${type}] Heap sys:`, metrics.go_memstats_heap_sys_bytes);
-        
+
         // CPU 업데이트
         const cpuRate = calculateRate(type, 'process_cpu_seconds_total', metrics.process_cpu_seconds_total || 0);
         console.log(`[${type}] Calculated CPU rate:`, cpuRate);
@@ -1239,14 +1227,14 @@
     function updateDatabaseDetails(type, metricData) {
         const metrics = metricData.metrics || {};
         const info = metricData.info || {};
-        
+
         console.log(`Updating ${type} details:`, metricData);
-        
+
         // QPS 계산 (실시간) - 소수점 유지
         const uptime = metrics.mysql_global_status_uptime || 1;
         const queries = metrics.mysql_global_status_queries || 0;
         const qps = queries / uptime;
-        
+
         const qpsEl = document.getElementById(type + '-qps');
         if (qpsEl) {
             if (qps >= 1000) {
@@ -1263,7 +1251,7 @@
                 qpsEl.textContent = qps.toFixed(2);
             }
         }
-        
+
         // Connections (더 정확한 값)
         const connections = metrics.mysql_global_status_threads_connected || 0;
         const connectionsEl = document.getElementById(type + '-connections');
@@ -1275,9 +1263,9 @@
     function updateDashboard(data) {
         console.log('=== updateDashboard called ===');
         console.log('Full dashboard data:', JSON.stringify(data, null, 2));
-        
+
         // Connection status 업데이트 확인
-        const connectionStatus = data.isConnected ? 'Connected' : 'Disconnected';
+        const connectionStatus = data.isConnected ? '연결됨' : '연결 끊김';
         console.log('Setting connection status to:', connectionStatus);
         document.getElementById('connection-status').textContent = connectionStatus;
 
@@ -1295,7 +1283,7 @@
             console.log('Updating service selector status:', data.selectorStatus);
             const targetEl = document.getElementById('k8s-target');
             const switchedEl = document.getElementById('k8s-switched');
-            
+
             if (targetEl) {
                 targetEl.textContent = data.selectorStatus.currentTarget || 'unknown';
             }
@@ -1332,21 +1320,21 @@
         } else {
             console.error('data.readActivity is missing!');
         }
-        
+
         console.log('Dashboard update complete');
     }
 
     function updateDatabaseCard(type, dbData) {
         console.log(`Updating ${type} database card:`, dbData);
-        
+
         // Uptime
         const uptimeEl = document.getElementById(type + '-uptime');
         if (uptimeEl) uptimeEl.textContent = dbData.uptime || '0d 0h 0m 0s';
-        
+
         // Connections
         const connectionsEl = document.getElementById(type + '-connections');
         if (connectionsEl) connectionsEl.textContent = dbData.connections || '0';
-        
+
         // QPS - 숫자 포맷팅 추가 (소수점 2자리)
         const qpsEl = document.getElementById(type + '-qps');
         if (qpsEl) {
@@ -1365,7 +1353,7 @@
                 qpsEl.textContent = qpsValue.toFixed(2);
             }
         }
-        
+
         // Last Heartbeat
         const heartbeatEl = document.getElementById(type + '-heartbeat');
         if (heartbeatEl) heartbeatEl.textContent = dbData.lastHeartbeat || '-';
@@ -1388,13 +1376,13 @@
         // Status Card (메트릭 카드) 배경색 변경
         const statusCard = document.getElementById(type + '-status-card');
         const statusText = document.getElementById(type + '-status-text');
-        
+
         if (statusCard && statusText) {
             // UP/DOWN 표시
             const isHealthy = dbData.isHealthy !== false && dbData.status !== 'Down';
-            statusText.textContent = isHealthy ? '● UP' : '● DOWN';
+            statusText.textContent = isHealthy ? '정상' : '중단';
             statusCard.className = 'metric-card';
-            
+
             if (isHealthy) {
                 statusCard.classList.add('status-up');
             } else {
@@ -1405,7 +1393,7 @@
 
     function updateReadActivity(activityData) {
         console.log('Updating read activity:', activityData);
-        
+
         if (!activityData || !activityData.activeDbReads || !activityData.standbyDbReads) {
             console.warn('Invalid read activity data, skipping update');
             return;
@@ -1425,7 +1413,7 @@
             // 고정된 X축 레이블 생성 (빈 문자열, 30개 고정)
             const dataLength = activityData.activeDbReads.length;
             const labels = new Array(dataLength).fill('');
-            
+
             const activeData = activityData.activeDbReads.map(d => d.count || 0);
             const standbyData = activityData.standbyDbReads.map(d => d.count || 0);
 
@@ -1454,15 +1442,15 @@
     function updateWriteActivity(activityData) {
         console.log('=== updateWriteActivity called ===');
         console.log('Full activityData:', JSON.stringify(activityData, null, 2));
-        
+
         if (!activityData) {
             console.error('activityData is null or undefined');
             return;
         }
-        
+
         console.log('activityData.activeDbWrites:', activityData.activeDbWrites);
         console.log('activityData.standbyDbWrites:', activityData.standbyDbWrites);
-        
+
         if (!activityData.activeDbWrites || !activityData.standbyDbWrites) {
             console.warn('Invalid activity data - missing activeDbWrites or standbyDbWrites');
             console.warn('Available keys:', Object.keys(activityData));
@@ -1483,7 +1471,7 @@
             // 고정된 X축 레이블 생성 (빈 문자열, 30개 고정)
             const dataLength = activityData.activeDbWrites.length;
             const labels = new Array(dataLength).fill('');
-            
+
             const activeData = activityData.activeDbWrites.map(d => d.count || 0);
             const standbyData = activityData.standbyDbWrites.map(d => d.count || 0);
 
@@ -1520,7 +1508,7 @@
                 labels: [],
                 datasets: [
                     {
-                        label: 'Active DB',
+                        label: '활성 DB',
                         data: [],
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -1530,7 +1518,7 @@
                         pointHoverRadius: 5
                     },
                     {
-                        label: 'Standby DB',
+                        label: '대기 DB',
                         data: [],
                         borderColor: '#06b6d4',
                         backgroundColor: 'rgba(6, 182, 212, 0.1)',
@@ -1564,14 +1552,14 @@
                     tooltip: {
                         callbacks: {
                             title: function(context) {
-                                return 'Data Point: ' + (context[0].dataIndex + 1);
+                                return '데이터 지점: ' + (context[0].dataIndex + 1);
                             },
                             label: function(context) {
                                 let label = context.dataset.label || '';
                                 if (label) {
                                     label += ': ';
                                 }
-                                label += context.parsed.y + ' reads';
+                                label += context.parsed.y + ' 읽기';
                                 return label;
                             }
                         }
@@ -1602,7 +1590,7 @@
                 }
             }
         });
-        
+
         console.log('Read chart initialized');
     }
 
@@ -1615,7 +1603,7 @@
                 labels: [],
                 datasets: [
                     {
-                        label: 'Active DB',
+                        label: '활성 DB',
                         data: [],
                         borderColor: '#3b82f6',
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -1625,7 +1613,7 @@
                         pointHoverRadius: 5
                     },
                     {
-                        label: 'Standby DB',
+                        label: '대기 DB',
                         data: [],
                         borderColor: '#8b5cf6',
                         backgroundColor: 'rgba(139, 92, 246, 0.1)',
@@ -1659,14 +1647,14 @@
                     tooltip: {
                         callbacks: {
                             title: function(context) {
-                                return 'Data Point: ' + (context[0].dataIndex + 1);
+                                return '데이터 지점: ' + (context[0].dataIndex + 1);
                             },
                             label: function(context) {
                                 let label = context.dataset.label || '';
                                 if (label) {
                                     label += ': ';
                                 }
-                                label += context.parsed.y + ' writes';
+                                label += context.parsed.y + ' 쓰기';
                                 return label;
                             }
                         }
@@ -1697,7 +1685,7 @@
                 }
             }
         });
-        
+
         console.log('Replication chart initialized');
     }
 
