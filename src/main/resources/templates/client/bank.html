@@ -219,35 +219,49 @@
       });
     }
 
-    // ✅ Failover 완료 대기: balance 1회 성공 시 재활성화 (DOWN 시에만 사용)
+    // ✅ Failover 완료 대기: 내부 프록시(/bank/failover/status) 감시 → watcher === 'standby' 시 활성화
     async function waitForFailoverAndEnable(){
       failoverMode = true;
       setStatusPill(true, 'Failover 감지', '자동 재시도 중입니다. 서비스는 계속 시도됩니다.');
       setFinanceControlsEnabled(false);
 
-      const maxWaitMs = 30000;
-      const interval  = 500;
+      const statusUrl = '/bank/failover/status'; // 내부 엔드포인트
+      const maxWaitMs = 60000;
+      const interval  = 800;
       const start     = Date.now();
 
       while (Date.now() - start < maxWaitMs){
         try {
-          const res  = await fetch('/bank/api/balance', { headers: baseHeaders });
-          const data = await res.json().catch(()=> ({}));
-          if (res.ok && data?.ok){
-            setAccountNo(data.accountNo);
-            setBalance(data.balance);
-            // 만약 UI Lock이 걸린 상태라면 잠금 해제될 때까지 비활성화를 유지
-            if (!uiLocked) {
-              setFinanceControlsEnabled(true);
-              setStatusPill(false);
+          const res = await fetch(statusUrl, { headers: baseHeaders });
+          if (res.ok) {
+            const st = await res.json().catch(()=> ({}));
+            const watcher = String(st?.watcher || '').toLowerCase();
+
+            if (watcher === 'standby') {
+              // 잔액/계좌번호 최신화
+              try {
+                const data = await requestWithFailover('/bank/api/balance', { headers: baseHeaders }, '잔액 조회');
+                if (data?.ok) {
+                  setAccountNo(data.accountNo);
+                  setBalance(data.balance);
+                }
+              } catch(_) { /* 실패해도 비차단 */ }
+
+              if (!uiLocked) {
+                setFinanceControlsEnabled(true);
+                setStatusPill(false);
+                showToast('Failover 완료(Standby 전환)');
+              }
+              failoverMode = false;
+              return;
             }
-            failoverMode = false;
-            return;
           }
-        } catch (_) { /* 무시 */ }
+        } catch (_) { /* 무시 후 재시도 */ }
+
         await new Promise(r => setTimeout(r, interval));
       }
-      showToast('Failover 지연 · 잠시 후 다시 시도해주세요');
+
+      showToast('Failover 지연 · 상태 전환을 확인하지 못했습니다');
       failoverMode = false;
     }
 

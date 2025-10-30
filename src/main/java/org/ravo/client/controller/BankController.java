@@ -43,4 +43,12 @@ public class BankController {
         dbControlService.activeDbUp();
         return ResponseEntity.ok(Map.of("ok", true, "message", "Active DB를 up(복구) 시뮬레이션했습니다."));
     }
+
+    /** failover watcher 엔드포인트 **/
+    @GetMapping("/failover/status")
+    @ResponseBody
+    public ResponseEntity<?> getFailoverStatus() {
+        String watcher = dbControlService.getWatcherState(); // active | standby | unknown
+        return ResponseEntity.ok(Map.of("ok", true, "watcher", watcher));
+    }
 }
