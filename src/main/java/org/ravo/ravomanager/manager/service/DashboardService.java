@@ -541,8 +541,8 @@ public class DashboardService {
      */
 
     private String getCurrentTimestamp() {
-        DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM/dd HH:mm");
+        DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM/dd HH:mm:ss");
         ZoneId KST_ZONE = ZoneId.of("Asia/Seoul");
         return LocalDateTime.now(KST_ZONE).format(TIME_FORMATTER);
     }
-    }
+}

@@ -71,8 +71,8 @@ public class SynchronizationMetricsService {
                 // DB에서 가져온 UTC 기준 시간
                 LocalDateTime createdAtUtc = (LocalDateTime) latestGtidRow.get("created_at");
 
-                // 변환에 필요한 객체들을 메서드 내에서 선언
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd HH:mm");
+                // 변환 및 포맷 설정 (초 단위 포함)
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd HH:mm:ss");
                 ZoneId utcZone = ZoneId.of("UTC");
                 ZoneId kstZone = ZoneId.of("Asia/Seoul");
 
