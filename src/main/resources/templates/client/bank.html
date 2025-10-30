@@ -202,20 +202,8 @@
       });
     }
 
-    // ✅ 버튼 비활성/활성
-    function setFinanceControlsEnabled(on){
-      const selectors = [
-        // 거래 폼
-        '#formDeposit input',  '#formDeposit button[type="submit"]',
-        '#formWithdraw input', '#formWithdraw button[type="submit"]',
-        '#formTransfer input', '#formTransfer button[type="submit"]',
-        // 기타
-        '#copyBtn',
-        '#btnRefresh'
-        // Active DB 제어 버튼
-        '#btnDown',
-        '#btnUp'
-      ];
+    // ✅ 공통: 엘리먼트 enable/disable + 스타일
+    function toggleEls(on, selectors){
       document.querySelectorAll(selectors.join(',')).forEach(el => {
         if (!el) return;
         el.disabled = !on;
@@ -224,11 +212,46 @@
       });
     }
 
+    // ✅ 전체 인터랙션(금융 + 복사/새로고침 + DB Up/Down) 토글
+    function setAllInteractiveEnabled(on){
+      const selectors = [
+        // 거래 폼
+        '#formDeposit input',  '#formDeposit button[type="submit"]',
+        '#formWithdraw input', '#formWithdraw button[type="submit"]',
+        '#formTransfer input', '#formTransfer button[type="submit"]',
+        // 기타
+        '#copyBtn',
+        '#btnRefresh',
+        // DB 제어
+        '#btnDown',
+        '#btnUp'
+      ];
+      toggleEls(on, selectors);
+    }
+
+    // ✅ 금융 관련(거래 폼 + 복사/새로고침)만 토글
+    function setFinanceActionsEnabled(on){
+      const selectors = [
+        '#formDeposit input',  '#formDeposit button[type="submit"]',
+        '#formWithdraw input', '#formWithdraw button[type="submit"]',
+        '#formTransfer input', '#formTransfer button[type="submit"]',
+        '#copyBtn',
+        '#btnRefresh'
+      ];
+      toggleEls(on, selectors);
+    }
+
+    // ✅ DB 제어 버튼(Up/Down)만 토글 — 부분 비활성화에서 사용
+    function setDbControlsEnabled(on){
+      const selectors = ['#btnDown', '#btnUp'];
+      toggleEls(on, selectors);
+    }
+
     // ✅ Failover 완료 대기: 내부 프록시(/bank/failover/status) 감시 → watcher === 'standby' 시 활성화
     async function waitForFailoverAndEnable(){
       failoverMode = true;
       setStatusPill(true, 'Failover 감지', '자동 재시도 중입니다. 서비스는 계속 시도됩니다.');
-      setFinanceControlsEnabled(false);
+      setAllInteractiveEnabled(false);      // 전체 비활성화
 
       const statusUrl = '/bank/failover/status'; // 내부 엔드포인트
       const maxWaitMs = 60000;
@@ -253,7 +276,7 @@
               } catch(_) { /* 실패해도 비차단 */ }
 
               if (!uiLocked) {
-                setFinanceControlsEnabled(true);
+                setAllInteractiveEnabled(true);     // 전체 활성화
                 setStatusPill(false);
                 showToast('Failover 완료(Standby 전환)');
               }
@@ -281,13 +304,13 @@
           uiLocked = locked;
           if (uiLocked){
             // 전환 진행 중 잠금
-            setFinanceControlsEnabled(false);
+            setAllInteractiveEnabled(false);        // 전체 비활성화
             setStatusPill(true, '시스템 전환 중', '잠시만 기다려 주세요.');
           } else {
             // 전환 해제
             // failoverMode가 아니면 배너 내리고 버튼 활성화
             if (!failoverMode) {
-              setFinanceControlsEnabled(true);
+              setAllInteractiveEnabled(true);       // 전체 활성화
               setStatusPill(false);
               showToast('전환 완료');
             }
@@ -295,6 +318,43 @@
         }
       }catch(_){ /* 폴링 실패는 조용히 무시 */ }
     }
+
+    async function ctrlActiveDb(act){
+      const url = act === 'down' ? '/bank/active-db/down' : '/bank/active-db/up';
+      try{
+        const res  = await fetch(url, {method:'POST', headers: baseHeaders});
+        const data = await res.json().catch(()=> ({}));
+        if (!res.ok || data.ok === false) throw new Error(data.message || '요청 실패');
+
+        showToast(data.message || '완료');
+
+        if (act === 'down'){
+          // 다운 → Failover 완료 대기: 전체 비활성화
+          waitForFailoverAndEnable();
+        } else {
+          // ⬆️ 업 클릭 시: 현재 standby 상태라면 Up/Down만 선제 비활성화
+          try {
+            const stRes = await fetch('/bank/failover/status', { headers: baseHeaders });
+            if (stRes.ok) {
+              const st = await stRes.json().catch(()=> ({}));
+              const watcher = String(st?.watcher || '').toLowerCase();
+              if (watcher === 'standby') {
+                // 🔒 부분 비활성화: DB 제어 버튼만 막기
+                setDbControlsEnabled(false);
+                setStatusPill(true, '전환 준비 중', 'Active 복구 단계입니다.');
+                // 이후 manager가 /ui/status=locked 로 바꾸면 pollUiLockStatus가 전체 비활성화로 전환
+              }
+            }
+          } catch(_) {}
+
+          // 잔액은 살짝 지연 후 갱신(선택)
+          setTimeout(()=> loadBalance(true), 700);
+        }
+      }catch(e){
+        showToast('요청 실패: ' + e.message);
+      }
+    }
+
     setInterval(pollUiLockStatus, 500); // 0.5초 간격 폴링
     // 초기 1회 즉시 체크
     pollUiLockStatus();
@@ -370,28 +430,6 @@
         }
       }catch(e){
         /* 실패해도 비차단 */
-      }
-    }
-
-    // ---- Active DB 제어 ----
-    async function ctrlActiveDb(act){
-      const url = act === 'down' ? '/bank/active-db/down' : '/bank/active-db/up';
-      try{
-        const res  = await fetch(url, {method:'POST', headers: baseHeaders});
-        const data = await res.json().catch(()=> ({}));
-        if (!res.ok || data.ok === false) throw new Error(data.message || '요청 실패');
-
-        showToast(data.message || '완료');
-
-        if (act === 'down'){
-          // 다운 직후: failover 완료까지 자동 대기 (락은 백엔드가 제어하지 않으므로 FE가 직접 보호)
-          waitForFailoverAndEnable();
-        } else {
-          // 업 직후: /lock → /unlock은 백엔드가 수행. FE는 폴링으로 자동 반응.
-          setTimeout(()=> loadBalance(true), 700);
-        }
-      }catch(e){
-        showToast('요청 실패: ' + e.message);
       }
     }
 
