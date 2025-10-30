@@ -852,91 +852,91 @@
     </div>
 </div>
 
-<div class="dashboard-grid events-grid">
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">Binlog 이벤트</div>
-            <div class="section-header">실시간</div>
-        </div>
-        <div id="binlog-events">
-            <div class="event-item update">
-                <div class="event-header">
-                    <span class="event-badge update">UPDATE</span>
-                    <span class="event-db-label active">active</span>
-                </div>
-                <div class="event-binlog">mysql-bin.000123:45678850</div>
-                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>
-                <div class="event-time">오전 1:22:06</div>
-            </div>
+<!--<div class="dashboard-grid events-grid">-->
+<!--    <div class="card">-->
+<!--        <div class="card-header">-->
+<!--            <div class="card-title">Binlog 이벤트</div>-->
+<!--            <div class="section-header">실시간</div>-->
+<!--        </div>-->
+<!--        <div id="binlog-events">-->
+<!--            <div class="event-item update">-->
+<!--                <div class="event-header">-->
+<!--                    <span class="event-badge update">UPDATE</span>-->
+<!--                    <span class="event-db-label active">active</span>-->
+<!--                </div>-->
+<!--                <div class="event-binlog">mysql-bin.000123:45678850</div>-->
+<!--                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>-->
+<!--                <div class="event-time">오전 1:22:06</div>-->
+<!--            </div>-->
 
-            <div class="event-item update">
-                <div class="event-header">
-                    <span class="event-badge update">UPDATE</span>
-                    <span class="event-db-label standby">standby</span>
-                </div>
-                <div class="event-binlog">mysql-bin.000123:45678850</div>
-                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>
-                <div class="event-time">오전 1:22:06</div>
-            </div>
+<!--            <div class="event-item update">-->
+<!--                <div class="event-header">-->
+<!--                    <span class="event-badge update">UPDATE</span>-->
+<!--                    <span class="event-db-label standby">standby</span>-->
+<!--                </div>-->
+<!--                <div class="event-binlog">mysql-bin.000123:45678850</div>-->
+<!--                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>-->
+<!--                <div class="event-time">오전 1:22:06</div>-->
+<!--            </div>-->
 
-            <div class="event-item delete">
-                <div class="event-header">
-                    <span class="event-badge delete">DELETE</span>
-                    <span class="event-db-label active">active</span>
-                </div>
-                <div class="event-binlog">mysql-bin.000123:45678800</div>
-                <div class="event-query">DELETE FROM sessions WHERE expired_at < NOW()</div>
-                <div class="event-time">오전 1:22:01</div>
-            </div>
-        </div>
-    </div>
+<!--            <div class="event-item delete">-->
+<!--                <div class="event-header">-->
+<!--                    <span class="event-badge delete">DELETE</span>-->
+<!--                    <span class="event-db-label active">active</span>-->
+<!--                </div>-->
+<!--                <div class="event-binlog">mysql-bin.000123:45678800</div>-->
+<!--                <div class="event-query">DELETE FROM sessions WHERE expired_at < NOW()</div>-->
+<!--                <div class="event-time">오전 1:22:01</div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
 
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">시스템 이벤트</div>
-            <div class="section-header">최근 24시간</div>
-        </div>
-        <div id="system-events">
-            <div class="system-event success">
-                <div class="event-icon"></div>
-                <div class="event-content">
-                    <div class="event-title">동기화가 성공적으로 완료되었습니다</div>
-                    <div class="event-description">Binlog 위치: mysql-bin.000123:45678901</div>
-                    <div class="event-timestamp">2025. 10. 18. 오전 1:22:09</div>
-                </div>
-                <span class="event-type-badge sync">동기화</span>
-            </div>
+<!--    <div class="card">-->
+<!--        <div class="card-header">-->
+<!--            <div class="card-title">시스템 이벤트</div>-->
+<!--            <div class="section-header">최근 24시간</div>-->
+<!--        </div>-->
+<!--        <div id="system-events">-->
+<!--            <div class="system-event success">-->
+<!--                <div class="event-icon"></div>-->
+<!--                <div class="event-content">-->
+<!--                    <div class="event-title">동기화가 성공적으로 완료되었습니다</div>-->
+<!--                    <div class="event-description">Binlog 위치: mysql-bin.000123:45678901</div>-->
+<!--                    <div class="event-timestamp">2025. 10. 18. 오전 1:22:09</div>-->
+<!--                </div>-->
+<!--                <span class="event-type-badge sync">동기화</span>-->
+<!--            </div>-->
 
-            <div class="system-event info">
-                <div class="event-icon"></div>
-                <div class="event-content">
-                    <div class="event-title">Standby DB로부터 하트비트 수신</div>
-                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:41</div>
-                </div>
-                <span class="event-type-badge connection">연결</span>
-            </div>
+<!--            <div class="system-event info">-->
+<!--                <div class="event-icon"></div>-->
+<!--                <div class="event-content">-->
+<!--                    <div class="event-title">Standby DB로부터 하트비트 수신</div>-->
+<!--                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:41</div>-->
+<!--                </div>-->
+<!--                <span class="event-type-badge connection">연결</span>-->
+<!--            </div>-->
 
-            <div class="system-event warning">
-                <div class="event-icon"></div>
-                <div class="event-content">
-                    <div class="event-title">복제 지연이 2.5초로 증가했습니다</div>
-                    <div class="event-description">15초 후 지연 시간이 정상으로 돌아왔습니다</div>
-                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:11</div>
-                </div>
-                <span class="event-type-badge performance">성능</span>
-            </div>
+<!--            <div class="system-event warning">-->
+<!--                <div class="event-icon"></div>-->
+<!--                <div class="event-content">-->
+<!--                    <div class="event-title">복제 지연이 2.5초로 증가했습니다</div>-->
+<!--                    <div class="event-description">15초 후 지연 시간이 정상으로 돌아왔습니다</div>-->
+<!--                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:11</div>-->
+<!--                </div>-->
+<!--                <span class="event-type-badge performance">성능</span>-->
+<!--            </div>-->
 
-            <div class="system-event success">
-                <div class="event-icon"></div>
-                <div class="event-content">
-                    <div class="event-title">Active DB가 복구되고 다시 동기화되었습니다</div>
-                    <div class="event-description">Standby DB에서 1.2 GB 데이터 전송됨</div>
-                    <div class="event-timestamp">2025. 10. 18. 오전 1:20:11</div>
-                </div>
-                <span class="event-type-badge recovery">복구</span>
-            </div>
-        </div>
-    </div>
+<!--            <div class="system-event success">-->
+<!--                <div class="event-icon"></div>-->
+<!--                <div class="event-content">-->
+<!--                    <div class="event-title">Active DB가 복구되고 다시 동기화되었습니다</div>-->
+<!--                    <div class="event-description">Standby DB에서 1.2 GB 데이터 전송됨</div>-->
+<!--                    <div class="event-timestamp">2025. 10. 18. 오전 1:20:11</div>-->
+<!--                </div>-->
+<!--                <span class="event-type-badge recovery">복구</span>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
 </div>
 
 <script th:inline="javascript">
