@@ -1,5 +1,6 @@
 package org.ravo.ravomanager.manager.service;
 
+import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import org.ravo.ravomanager.manager.dto.SelectorStatus;
 import org.ravo.ravomanager.manager.dto.*;
@@ -536,9 +537,12 @@ public class DashboardService {
     }
 
     /**
-     * 현재 타임스탬프 반환
+     * 현재 한국시간 기준 타임스탬프 반환
      */
+
     private String getCurrentTimestamp() {
-        return LocalDateTime.now().format(TIME_FORMATTER);
+        DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM/dd HH:mm");
+        ZoneId KST_ZONE = ZoneId.of("Asia/Seoul");
+        return LocalDateTime.now(KST_ZONE).format(TIME_FORMATTER);
     }
-}
+    }

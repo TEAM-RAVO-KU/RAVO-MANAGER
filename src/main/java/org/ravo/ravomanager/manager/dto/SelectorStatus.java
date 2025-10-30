@@ -3,7 +3,8 @@ package org.ravo.ravomanager.manager.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -11,20 +12,22 @@ import java.time.format.DateTimeFormatter;
  */
 @Getter
 public class SelectorStatus {
-    // 사람이 보기 편한 형식: "10/19 15:30"
+
+    // 한국 시간대 (UTC+9)
+    private static final ZoneId KST_ZONE = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DISPLAY_FORMATTER = DateTimeFormatter.ofPattern("MM/dd HH:mm");
-    
-    private final String currentTarget;      // "active" or "standby"
-    
-    @JsonIgnore  // JSON 직렬화에서 LocalDateTime 제외
-    private final LocalDateTime switchedAt;
+
+    private final String currentTarget;  // "active" or "standby"
+
+    @JsonIgnore // JSON 직렬화에서 ZonedDateTime 제외
+    private final ZonedDateTime switchedAt;
 
     /**
      * 새로운 상태 생성 (상태 변경 시 호출)
      */
     public SelectorStatus(String currentTarget) {
         this.currentTarget = currentTarget;
-        this.switchedAt = LocalDateTime.now();
+        this.switchedAt = ZonedDateTime.now(KST_ZONE); // 한국 시간으로 저장
     }
 
     /**
@@ -47,7 +50,9 @@ public class SelectorStatus {
 
     @Override
     public String toString() {
-        return String.format("SelectorStatus{currentTarget='%s', switchedAt=%s}", 
-                currentTarget, getLastSwitchedFormatted());
+        return String.format(
+                "SelectorStatus{currentTarget='%s', switchedAt=%s (KST)}",
+                currentTarget, getLastSwitchedFormatted()
+        );
     }
 }

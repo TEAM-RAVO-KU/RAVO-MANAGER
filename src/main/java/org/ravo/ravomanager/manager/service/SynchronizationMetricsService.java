@@ -1,6 +1,8 @@
 package org.ravo.ravomanager.manager.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.ravo.ravomanager.manager.domain.SyncStatus;
@@ -63,9 +65,23 @@ public class SynchronizationMetricsService {
                     ? (String) latestGtidRow.getOrDefault("gtid_set", "N/A")
                     : "N/A";
 
-            String lastSyncTime = latestGtidRow != null && latestGtidRow.get("created_at") != null
-                    ? ((LocalDateTime) latestGtidRow.get("created_at")).format(FORMATTER)
-                    : "N/A";
+            String lastSyncTime = "N/A";
+
+            if (latestGtidRow != null && latestGtidRow.get("created_at") != null) {
+                // DB에서 가져온 UTC 기준 시간
+                LocalDateTime createdAtUtc = (LocalDateTime) latestGtidRow.get("created_at");
+
+                // 변환에 필요한 객체들을 메서드 내에서 선언
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd HH:mm");
+                ZoneId utcZone = ZoneId.of("UTC");
+                ZoneId kstZone = ZoneId.of("Asia/Seoul");
+
+                // UTC → KST 변환
+                ZonedDateTime createdAtKst = createdAtUtc.atZone(utcZone).withZoneSameInstant(kstZone);
+
+                // 포맷팅
+                lastSyncTime = createdAtKst.format(formatter);
+            }
 
             // Standby GTID (Standby DB 직접 조회)
             String standbyGtid = fetchStandbyGtid();
