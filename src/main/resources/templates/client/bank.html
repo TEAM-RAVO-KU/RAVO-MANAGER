@@ -202,14 +202,19 @@
       });
     }
 
-    // ✅ 금융 기능(입금/출금/송금/복사/잔액 새로 고침)만 비활성/활성
+    // ✅ 버튼 비활성/활성
     function setFinanceControlsEnabled(on){
       const selectors = [
+        // 거래 폼
         '#formDeposit input',  '#formDeposit button[type="submit"]',
         '#formWithdraw input', '#formWithdraw button[type="submit"]',
         '#formTransfer input', '#formTransfer button[type="submit"]',
+        // 기타
         '#copyBtn',
         '#btnRefresh'
+        // Active DB 제어 버튼
+        '#btnDown',
+        '#btnUp'
       ];
       document.querySelectorAll(selectors.join(',')).forEach(el => {
         if (!el) return;
