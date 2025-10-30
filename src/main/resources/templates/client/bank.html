@@ -192,7 +192,10 @@
       const title = document.getElementById('statusTitle');
       const text  = document.getElementById('statusText');
       if (titleText) title.textContent = titleText;
-      text.textContent = descText ? `· ${descText}` : '';
+
+      if (descText) text.innerHTML = descText.replace(/\n/g, '<br>');
+      else text.textContent = '';
+
       if (on) pill.classList.add('show'); else pill.classList.remove('show');
     }
 
@@ -357,7 +360,7 @@
                 setStatusPill(
                   true,
                   'Active DB UP 감지',
-                  'Standby DB의 데이터를 Active DB로 동기화중입니다. 정상적으로 입출금과 송금이 가능합니다.'
+                  'Standby DB의 데이터를 Active DB로 동기화중입니다.\n정상적으로 입출금과 송금이 가능합니다.'
                 );
                 preLockUpPhase = true; // 락 오기 전까지 안내 배너 유지
               }
