@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
@@ -20,7 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequiredArgsConstructor
 public class DashboardController {
 
-    private static final String REPLICATION_MONITOR_VIEW = "manager/replication-monitor";
+    private static final String REPLICATION_MONITOR_VIEW = "/manager/dashboard";
     private static final String INITIAL_DATA_ATTRIBUTE = "initialData";
 
     private final DashboardService dashboardService;

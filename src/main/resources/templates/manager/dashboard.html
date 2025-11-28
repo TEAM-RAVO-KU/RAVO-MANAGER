@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAVO Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/dashboard.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="/js/dashboard.js" defer></script>
+</head>
+<body>
+<div class="header">
+    <div>
+        <h1>RAVO Dashboard</h1>
+        <div class="header-subtitle">실시간 동기화 및 장애 조치 모니터링</div>
+    </div>
+    <div class="connection-status">
+        <span class="status-dot"></span>
+        <span id="connection-status">연결됨</span>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="db-icon">🗄️</div>
+                <div>
+                    <div>Active DB</div>
+                    <div class="db-role">원본</div>
+                </div>
+            </div>
+            <div class="status-badge active" id="active-status">
+                활성
+            </div>
+        </div>
+
+        <div class="row g-2 p-3">
+            <div class="col-4">
+                <div class="metric-card" id="active-status-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">상태</h6>
+                        <p class="metric-card-value" id="active-status-text">활성</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">가동 시간</h6>
+                        <p class="metric-card-value" id="active-uptime">0d 0h 0m 0s</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">연결 수</h6>
+                        <p class="metric-card-value" id="active-connections">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="metric-item">
+            <div class="metric-label">QPS</div>
+            <div class="metric-value" id="active-qps">0</div>
+        </div>
+
+        <div class="row mt-3 g-2">
+            <div class="col-8">
+                <div class="row g-2 h-100">
+                    <div class="col-12" style="height: calc(50% - 4px);">
+                        <div class="metric-item h-100">
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">CPU (cores/sec)</div>
+                            <div class="mini-chart-container" style="height: 60px; flex: 1;">
+                                <canvas id="active-cpu-mini-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12" style="height: calc(50% - 4px);">
+                        <div class="metric-item h-100">
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">네트워크 (bytes/sec)</div>
+                            <div class="mini-chart-container" style="height: 60px; flex: 1;">
+                                <canvas id="active-network-mini-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-item h-100">
+                    <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">힙 메모리</div>
+                    <div class="mini-chart-container" style="flex: 1;">
+                        <canvas id="active-memory-mini-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="heartbeat">
+            <span>마지막 하트비트</span>
+            <span id="active-heartbeat">-</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="db-icon">🗄️</div>
+                <div>
+                    <div>Standby DB</div>
+                    <div class="db-role">복제본</div>
+                </div>
+            </div>
+            <div class="status-badge standby" id="standby-status">
+                대기
+            </div>
+        </div>
+
+        <div class="row g-2 p-3">
+            <div class="col-4">
+                <div class="metric-card" id="standby-status-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">상태</h6>
+                        <p class="metric-card-value" id="standby-status-text">대기</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">가동 시간</h6>
+                        <p class="metric-card-value" id="standby-uptime">0d 0h 0m 0s</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-card">
+                    <div class="metric-card-body text-center">
+                        <h6 class="metric-card-title">연결 수</h6>
+                        <p class="metric-card-value" id="standby-connections">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="metric-item">
+            <div class="metric-label">QPS</div>
+            <div class="metric-value" id="standby-qps">0</div>
+        </div>
+
+        <div class="row mt-3 g-2">
+            <div class="col-8">
+                <div class="row g-2 h-100">
+                    <div class="col-12" style="height: calc(50% - 4px);">
+                        <div class="metric-item h-100">
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">CPU (cores/sec)</div>
+                            <div class="mini-chart-container" style="height: 60px; flex: 1;">
+                                <canvas id="standby-cpu-mini-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12" style="height: calc(50% - 4px);">
+                        <div class="metric-item h-100">
+                            <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">네트워크 (bytes/sec)</div>
+                            <div class="mini-chart-container" style="height: 60px; flex: 1;">
+                                <canvas id="standby-network-mini-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="metric-item h-100">
+                    <div class="metric-label" style="font-size: 10px; margin-bottom: 4px;">힙 메모리</div>
+                    <div class="mini-chart-container" style="flex: 1;">
+                        <canvas id="standby-memory-mini-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="heartbeat">
+            <span>마지막 하트비트</span>
+            <span id="standby-heartbeat">-</span>
+        </div>
+    </div>
+
+    <div class="card k8s-selector">
+        <div class="card-header">
+            <div class="card-title">
+                <div>서비스 셀렉터 상태</div>
+            </div>
+        </div>
+
+        <div class="k8s-info-2col">
+            <div class="k8s-item">
+                <div class="k8s-label">현재 대상</div>
+                <div class="k8s-value">
+                    <span class="target-indicator" id="k8s-target">active</span>
+                </div>
+            </div>
+            <div class="k8s-item">
+                <div class="k8s-label">마지막 전환</div>
+                <div class="k8s-value" id="k8s-switched">오전 1:20:00</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card sync-section">
+        <div class="card-header">
+            <div class="card-title">동기화 지표</div>
+        </div>
+
+        <div class="sync-rate-display">
+            <div class="section-header">동기화율</div>
+            <div class="sync-percentage" id="sync-rate">99.80%</div>
+            <div class="sync-bar">
+                <div class="sync-bar-fill" id="sync-bar-fill" style="width: 99.8%"></div>
+            </div>
+        </div>
+
+        <div class="sync-details">
+            <div class="metric-item">
+                <div class="metric-label">Active DB 전송량</div>
+                <div class="metric-value" id="active-data-transferred">2.40 GB</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Standby DB 전송량</div>
+                <div class="metric-value" id="standby-data-transferred">2.40 GB</div>
+            </div>
+        </div>
+
+        <div class="sync-details">
+            <div class="binlog-position">
+                <div class="binlog-label">Active DB GTID</div>
+                <div class="binlog-value" id="active-gtid">mysql-bin.000123:45678901</div>
+            </div>
+            <div class="binlog-position">
+                <div class="binlog-label">Standby DB GTID</div>
+                <div class="binlog-value" id="standby-gtid">mysql-bin.000123:45678899</div>
+            </div>
+        </div>
+
+        <div class="heartbeat">
+            <span>마지막 동기화</span>
+            <span id="last-sync-time">오전 1:22:11</span>
+        </div>
+    </div>
+
+    <div class="card sync-section">
+        <div class="card-header">
+            <div class="card-title">읽기 활동 (SELECT)</div>
+            <div class="section-header">3초당 읽기 수</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="read-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="card sync-section">
+        <div class="card-header">
+            <div class="card-title">쓰기 활동 (INSERT + UPDATE + DELETE)</div>
+            <div class="section-header">3초당 쓰기 수</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="replication-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid events-grid">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Binlog 이벤트</div>
+            <div class="section-header">실시간</div>
+        </div>
+        <div id="binlog-events">
+            <div class="event-item update">
+                <div class="event-header">
+                    <span class="event-badge update">UPDATE</span>
+                    <span class="event-db-label active">active</span>
+                </div>
+                <div class="event-binlog">mysql-bin.000123:45678850</div>
+                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>
+                <div class="event-time">오전 1:22:06</div>
+            </div>
+
+            <div class="event-item update">
+                <div class="event-header">
+                    <span class="event-badge update">UPDATE</span>
+                    <span class="event-db-label standby">standby</span>
+                </div>
+                <div class="event-binlog">mysql-bin.000123:45678850</div>
+                <div class="event-query">UPDATE orders SET status = "completed" WHERE id = 5432</div>
+                <div class="event-time">오전 1:22:06</div>
+            </div>
+
+            <div class="event-item delete">
+                <div class="event-header">
+                    <span class="event-badge delete">DELETE</span>
+                    <span class="event-db-label active">active</span>
+                </div>
+                <div class="event-binlog">mysql-bin.000123:45678800</div>
+                <div class="event-query">DELETE FROM sessions WHERE expired_at < NOW()</div>
+                <div class="event-time">오전 1:22:01</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">시스템 이벤트</div>
+            <div class="section-header">최근 24시간</div>
+        </div>
+        <div id="system-events">
+            <div class="system-event success">
+                <div class="event-icon"></div>
+                <div class="event-content">
+                    <div class="event-title">동기화가 성공적으로 완료되었습니다</div>
+                    <div class="event-description">Binlog 위치: mysql-bin.000123:45678901</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:22:09</div>
+                </div>
+                <span class="event-type-badge sync">동기화</span>
+            </div>
+
+            <div class="system-event info">
+                <div class="event-icon"></div>
+                <div class="event-content">
+                    <div class="event-title">Standby DB로부터 하트비트 수신</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:41</div>
+                </div>
+                <span class="event-type-badge connection">연결</span>
+            </div>
+
+            <div class="system-event warning">
+                <div class="event-icon"></div>
+                <div class="event-content">
+                    <div class="event-title">복제 지연이 2.5초로 증가했습니다</div>
+                    <div class="event-description">15초 후 지연 시간이 정상으로 돌아왔습니다</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:21:11</div>
+                </div>
+                <span class="event-type-badge performance">성능</span>
+            </div>
+
+            <div class="system-event success">
+                <div class="event-icon"></div>
+                <div class="event-content">
+                    <div class="event-title">Active DB가 복구되고 다시 동기화되었습니다</div>
+                    <div class="event-description">Standby DB에서 1.2 GB 데이터 전송됨</div>
+                    <div class="event-timestamp">2025. 10. 18. 오전 1:20:11</div>
+                </div>
+                <span class="event-type-badge recovery">복구</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
