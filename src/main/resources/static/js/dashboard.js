@@ -378,6 +378,10 @@ function updateDashboard(data) {
         console.error('data.readActivity is missing!');
     }
 
+    if (data.systemEvents) {
+        console.log('Updating system events:', data.systemEvents);
+        updateSystemEvents(data.systemEvents);
+    }
     console.log('Dashboard update complete');
 }
 

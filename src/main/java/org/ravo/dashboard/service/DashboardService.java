@@ -32,6 +32,7 @@ public class DashboardService {
     private final MonitoringService monitoringService;
     private final KubernetesStatusService k8sStatusService;
     private final SynchronizationMetricsService synchronizationMetricsService;
+    private final SystemEventService systemEventService;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("오전 h:mm:ss");
     
@@ -79,7 +80,7 @@ public class DashboardService {
                     .writeActivity(getWriteActivity(metrics))
                     .readActivity(getReadActivity(metrics))
                     .recentBinlogEvents(getRecentBinlogEvents())
-                    .systemEvents(getSystemEvents())
+                    .systemEvents(systemEventService.getRecentSystemEvents())
                     .isConnected(true)
                     .build();
 
@@ -373,7 +374,8 @@ public class DashboardService {
 
     /**
      * 최근 Binlog 이벤트 조회
-     * TODO: 실제 binlog 파싱 구현
+     * TODO: 실제 bi
+     * nlog 파싱 구현
      */
     private List<BinlogEventDto> getRecentBinlogEvents() {
         List<BinlogEventDto> events = new ArrayList<>();
@@ -405,51 +407,6 @@ public class DashboardService {
         return events;
     }
 
-    /**
-     * 시스템 이벤트 조회
-     * TODO: 실제 이벤트 로그 시스템 연동
-     */
-    private List<SystemEventDto> getSystemEvents() {
-        List<SystemEventDto> events = new ArrayList<>();
-        
-        events.add(SystemEventDto.builder()
-                .eventType("sync")
-                .severity("success")
-                .title("Synchronization completed successfully")
-                .description("Binlog position: mysql-bin.000123:45678901")
-                .timestamp("2025. 10. 18. 오전 1:22:09")
-                .details(null)
-                .build());
-        
-        events.add(SystemEventDto.builder()
-                .eventType("connection")
-                .severity("info")
-                .title("Heartbeat received from Standby DB")
-                .description("")
-                .timestamp("2025. 10. 18. 오전 1:21:41")
-                .details(null)
-                .build());
-        
-        events.add(SystemEventDto.builder()
-                .eventType("performance")
-                .severity("warning")
-                .title("Replication lag increased to 2.5 seconds")
-                .description("Lag returned to normal after 15 seconds")
-                .timestamp("2025. 10. 18. 오전 1:21:11")
-                .details(null)
-                .build());
-        
-        events.add(SystemEventDto.builder()
-                .eventType("recovery")
-                .severity("success")
-                .title("Active DB recovered and re-synchronized")
-                .description("Transferred 1.2 GB of data from Standby DB")
-                .timestamp("2025. 10. 18. 오전 1:20:11")
-                .details(null)
-                .build());
-        
-        return events;
-    }
 
     /**
      * 에러 시 반환할 기본 응답

@@ -1,0 +1,16 @@
+.system-event.success { border-left: 4px solid #4caf50; }
+.system-event.error { border-left: 4px solid #e53935; }
+.system-event.warning { border-left: 4px solid #ff9800; }
+.system-event.info { border-left: 4px solid #2196f3; }
+
+.event-icon.success { background-color: #4caf50; }
+.event-icon.error { background-color: #e53935; }
+.event-icon.warning { background-color: #ff9800; }
+.event-icon.info { background-color: #2196f3; }
+
+/* Badge */
+.event-type-badge.sync { background-color: #e6f7ec; color:#2a8f45; }
+.event-type-badge.recovery { background-color: #f3e8ff; color:#6a1b9a; }
+.event-type-badge.connection { background-color: #e0f2ff; color:#0277bd; }
+.event-type-badge.performance { background-color: #fff8e1; color:#ef6c00; }
+.event-type-badge.backup { background-color: #f9f1dd; color:#795548; }
